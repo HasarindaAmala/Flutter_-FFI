@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.c_plugin">
+
+    <!--
+      No <application> tag needed in an FFI plugin manifest.
+      Only declare permissions or features your plugin needs.
+    -->
+
+</manifest>

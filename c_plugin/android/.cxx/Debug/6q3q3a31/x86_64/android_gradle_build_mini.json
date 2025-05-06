@@ -1,0 +1,29 @@
+{
+  "buildFiles": [
+    "D:\\projects\\LIFI_reciever\\c_plugin\\android\\src\\main\\cpp\\CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "C:\\Users\\user\\AppData\\Local\\Android\\sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+      "-C",
+      "D:\\projects\\LIFI_reciever\\c_plugin\\android\\.cxx\\Debug\\6q3q3a31\\x86_64",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "C:\\Users\\user\\AppData\\Local\\Android\\sdk\\cmake\\3.22.1\\bin\\ninja.exe",
+    "-C",
+    "D:\\projects\\LIFI_reciever\\c_plugin\\android\\.cxx\\Debug\\6q3q3a31\\x86_64",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "c_plugin::@6890427a1f51a3e7e1df": {
+      "artifactName": "c_plugin",
+      "abi": "x86_64",
+      "output": "D:\\projects\\LIFI_reciever\\build\\c_plugin\\intermediates\\cxx\\Debug\\6q3q3a31\\obj\\x86_64\\libc_plugin.so",
+      "runtimeFiles": [
+        "D:\\projects\\LIFI_reciever\\c_plugin\\android\\src\\main\\jniLibs\\x86_64\\libopencv_java4.so"
+      ]
+    }
+  }
+}

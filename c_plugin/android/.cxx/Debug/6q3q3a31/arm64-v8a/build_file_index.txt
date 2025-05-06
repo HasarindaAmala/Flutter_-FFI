@@ -1,0 +1,1 @@
+D:\projects\LIFI_reciever\c_plugin\android\src\main\cpp\CMakeLists.txt

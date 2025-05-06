@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:c_plugin/c_plugin.dart';
+import 'package:lifi_reciever/Detection/detection_page.dart';
+import 'package:c_plugin/c_plugin.dart' as c_plugin;
+
 void main() {
   runApp(const MyApp());
 }
@@ -11,6 +13,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter FFI',
       home: const MyHomePage(title: 'Flutter Demo Home Page'),
     );
@@ -37,6 +40,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int total = 0;
+  String result = "";
 
   @override
   Widget build(BuildContext context) {
@@ -48,16 +52,24 @@ class _MyHomePageState extends State<MyHomePage> {
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
     return Scaffold(
-      body: Column(
+      body: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ElevatedButton(onPressed: (){
-            setState(() {
-              total = multiply(7, 7);
-              print(total);
-            });
-          }, child: Text("sum")),
-          SizedBox(child: Text('Sum result : $total')),
+          Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(onPressed: (){
+                setState(() {
+                  // result = c_plugin.getOpenCvVersion();
+                  // print(result);
+                  Navigator.of(context).push(MaterialPageRoute(builder: (context){
+                    return DetectionPage();
+                  }));
+
+                });
+              }, child: Text(result)),
+            ],
+          ),
         ],
       ),
 

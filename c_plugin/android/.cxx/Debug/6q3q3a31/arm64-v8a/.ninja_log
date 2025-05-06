@@ -1,0 +1,5 @@
+# ninja log v5
+1	282	7682103955361522	CMakeFiles/c_plugin_native.dir/openCvFunctions.cpp.o	76ac0156bbd3bb7f
+284	410	7682103956608180	D:/projects/LIFI_reciever/build/c_plugin/intermediates/cxx/Debug/6q3q3a31/obj/arm64-v8a/libc_plugin_native.so	b01638db5d2bc9ce
+1	92	7682107071381085	CMakeFiles/c_plugin.dir/openCvFunctions.cpp.o	5efb428c4489867a
+92	165	7682107072094134	D:/projects/LIFI_reciever/build/c_plugin/intermediates/cxx/Debug/6q3q3a31/obj/arm64-v8a/libc_plugin.so	aceb882aefe12625
