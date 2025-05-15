@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lifi_reciever/Detection/detection_page.dart';
 import 'package:c_plugin/c_plugin.dart' as c_plugin;
+import 'package:lifi_reciever/splashScreen/splashScreen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,7 +16,7 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'Flutter FFI',
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      home: splashScreen(),
     );
   }
 }
