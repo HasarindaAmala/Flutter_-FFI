@@ -1,0 +1,17 @@
+# ffigen.yaml
+
+llvm-path:
+  - "D:\\clang+llvm-20.1.4-x86_64-pc-windows-msvc\\bin"
+  - "D:\\clang+llvm-20.1.4-x86_64-pc-windows-msvc\\bin\\libclang.dll"
+
+output: "lib/c_plugin_bindings_generated.dart"
+
+headers:
+  entry-points:
+    - "src/c_plugin.h"
+
+functions:
+  include:
+    - "sum"
+    - "sum_long_running"
+    - "get_opencv_version"
