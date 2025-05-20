@@ -1,7 +1,0 @@
-[
-{
-  "directory": "D:/projects/LIFI_reciever/c_plugin/android/.cxx/Debug/6q3q3a31/x86_64",
-  "command": "C:\\Users\\user\\AppData\\Local\\Android\\Sdk\\ndk\\25.2.9519653\\toolchains\\llvm\\prebuilt\\windows-x86_64\\bin\\clang++.exe --target=x86_64-none-linux-android21 --sysroot=C:/Users/user/AppData/Local/Android/Sdk/ndk/25.2.9519653/toolchains/llvm/prebuilt/windows-x86_64/sysroot -Dc_plugin_EXPORTS -ID:/projects/LIFI_reciever/c_plugin/android/src/main/cpp/include -ID:/projects/LIFI_reciever/c_plugin/android/src/main/cpp/../../../../src -g -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -Wformat -Werror=format-security   -fno-limit-debug-info  -fPIC -o CMakeFiles\\c_plugin.dir\\openCvFunctions.cpp.o -c D:\\projects\\LIFI_reciever\\c_plugin\\android\\src\\main\\cpp\\openCvFunctions.cpp",
-  "file": "D:\\projects\\LIFI_reciever\\c_plugin\\android\\src\\main\\cpp\\openCvFunctions.cpp"
-}
-]

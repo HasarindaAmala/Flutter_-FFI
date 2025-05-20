@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lifi_reciever/transmeter/transmeterScreen.dart';
-import 'package:lifi_reciever/reciever/recieverScreen.dart';
+import '../reciever/recieverScreen.dart';
+
 class homeScreen extends StatefulWidget {
   const homeScreen({super.key});
 
@@ -70,7 +71,7 @@ class _homeScreenState extends State<homeScreen> {
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => (
-                              receiverScreen()
+                              ReceiverScreen()
                           )),
                         );
                       },

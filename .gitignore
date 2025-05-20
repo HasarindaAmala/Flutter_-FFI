@@ -41,3 +41,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# === FLUTTER PLUGIN & NATIVE (FFI) ===
+**/c_plugin/android/.cxx/
+**/c_plugin/android/.gradle/
+**/c_plugin/android/build/
+**/c_plugin/android/gradle/
+**/c_plugin/android/gradlew
+**/c_plugin/android/gradlew.bat
+**/c_plugin/lib/c_plugin_bindings_generated.dart
+
+# General generated Dart plugin files
+.flutter-plugins
+.flutter-plugins-dependencies

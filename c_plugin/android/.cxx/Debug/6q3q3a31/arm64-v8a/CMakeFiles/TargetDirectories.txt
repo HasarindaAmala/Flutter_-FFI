@@ -1,3 +1,0 @@
-D:/projects/LIFI_reciever/c_plugin/android/.cxx/Debug/6q3q3a31/arm64-v8a/CMakeFiles/c_plugin.dir
-D:/projects/LIFI_reciever/c_plugin/android/.cxx/Debug/6q3q3a31/arm64-v8a/CMakeFiles/edit_cache.dir
-D:/projects/LIFI_reciever/c_plugin/android/.cxx/Debug/6q3q3a31/arm64-v8a/CMakeFiles/rebuild_cache.dir

@@ -21,7 +21,7 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    sumResult = c_plugin.sum(1, 2);
+    //sumResult = c_plugin.sum(1, 2);
     // sumAsyncResult = c_plugin.sumAsync(3, 4);
   }
 

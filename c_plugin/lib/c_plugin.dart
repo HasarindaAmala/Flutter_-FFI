@@ -35,3 +35,27 @@ String getOpenCvVersion() {
   }
   return verPtr.toDartString();
 }
+
+
+// import 'dart:ffi';
+// import 'dart:typed_data';
+// import 'package:ffi/ffi.dart';
+
+// final DynamicLibrary nativeLib = DynamicLibrary.open('libc_plugin.so');
+//
+// base class DetectionResult extends Struct {
+//   @Int32()
+//   external int isOn;
+//
+//   @Int32()
+//   external int isGreen;
+// }
+//
+// typedef ProcessFrameNative = Pointer<DetectionResult> Function(
+//     Pointer<Uint8> data, Int32 width, Int32 height, Int32 centerX, Int32 centerY, Int32 radius);
+// typedef ProcessFrame = Pointer<DetectionResult> Function(
+//     Pointer<Uint8>, int, int, int, int, int);
+//
+// final ProcessFrame processFrame = nativeLib
+//     .lookup<NativeFunction<ProcessFrameNative>>('process_frame')
+//     .asFunction();

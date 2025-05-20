@@ -1,7 +1,0 @@
-# ninja log v5
-0	134	7682103969378856	CMakeFiles/c_plugin_native.dir/openCvFunctions.cpp.o	4c4fc7092558e3b1
-135	236	7682103970386167	D:/projects/LIFI_reciever/build/c_plugin/intermediates/cxx/Debug/6q3q3a31/obj/armeabi-v7a/libc_plugin_native.so	115b819a4358e1c8
-0	88	7682107074128067	CMakeFiles/c_plugin.dir/openCvFunctions.cpp.o	5c9c7cdd968554ab
-88	160	7682107074840673	D:/projects/LIFI_reciever/build/c_plugin/intermediates/cxx/Debug/6q3q3a31/obj/armeabi-v7a/libc_plugin.so	67c30b9eb174c33c
-2	108	7688193640416812	CMakeFiles/c_plugin.dir/openCvFunctions.cpp.o	5c9c7cdd968554ab
-108	279	7688193642114854	D:/projects/LIFI_reciever/build/c_plugin/intermediates/cxx/Debug/6q3q3a31/obj/armeabi-v7a/libc_plugin.so	67c30b9eb174c33c

@@ -30,6 +30,13 @@ FFI_PLUGIN_EXPORT int sum_long_running(int a, int b);
 /// Returns the OpenCV compile-time version string, e.g. "4.5.2"
 FFI_PLUGIN_EXPORT const char* get_opencv_version();
 
+//typedef struct {
+//    int isOn;
+//    int isGreen;
+//} DetectionResult;
+//
+//DetectionResult* process_frame(unsigned char* yuv_data, int width, int height, int centerX, int centerY, int radius);
+
 #ifdef __cplusplus
 }
 #endif

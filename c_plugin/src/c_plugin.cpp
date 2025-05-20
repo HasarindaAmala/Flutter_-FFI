@@ -14,4 +14,3 @@ FFI_PLUGIN_EXPORT int sum_long_running(int a, int b) {
 #endif
     return a + b;
 }
-
