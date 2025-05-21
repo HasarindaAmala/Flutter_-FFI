@@ -16,6 +16,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
   bool _dragging = false;
   bool _resizing = false;
   Offset? _lastLocalPos;
+  bool ledOn = false;
 
   double boxWidth = 100.0;
   double boxHeight = 100.0;
@@ -105,19 +106,28 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
     Rect roi = Offset(x0, y0) & Size(w, h);
 
-    final avg = processFrameBrightness(
-      img.planes[0].bytes,
-      pxW,
-      pxH,
-      img.planes[0].bytesPerRow,
-      roi,
+    final stats = processFrameColor(
+      yPlane:        img.planes[0].bytes,
+      uPlane:        img.planes[1].bytes,
+      vPlane:        img.planes[2].bytes,
+      width:         img.width,
+      height:        img.height,
+      yRowStride:    img.planes[0].bytesPerRow,
+      uvRowStride:   img.planes[1].bytesPerRow,
+      uvPixelStride: img.planes[1].bytesPerPixel!,
+      roi:           roi,
     );
+
+    final brightness = stats[0];
+    final hue        = stats[3];
+    final sat        = stats[4];
 
     if (mounted) {
       setState(() {
-        _avgBrightness = avg[0];
-        maxVal = avg[2];
-        minVal = avg[1];
+        _avgBrightness = brightness;
+        maxVal = stats[2];
+        minVal = stats[1];
+        ledOn = stats[5] == 1.0 ? false: true;
       });
     }
   }
@@ -133,7 +143,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
         children: [
           // Preview + ROI
           Expanded(
-            flex: 6,
+            flex: 5,
             child: LayoutBuilder(
               builder: (ctx, constraints) {
                 _previewSize ??= Size(
@@ -228,59 +238,75 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
           // Controls
           Expanded(
-            flex: 3,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text("Width: ${boxWidth.toStringAsFixed(0)}"),
-                  Slider(
-                    min: 20,
-                    max: 500,
-                    value: boxWidth,
-                    onChanged:
-                        (v) => setState(() {
-                          boxWidth = v.clamp(
-                            20.0,
-                            (_previewSize?.width ?? v) - (_boxOrigin?.dx ?? 0),
-                          );
-                        }),
-                  ),
-                  Text("Height: ${boxHeight.toStringAsFixed(0)}"),
-                  Slider(
-                    min: 20,
-                    max: 500,
-                    value: boxHeight,
-                    onChanged:
-                        (v) => setState(() {
-                          boxHeight = v.clamp(
-                            20.0,
-                            (_previewSize?.height ?? v) - (_boxOrigin?.dy ?? 0),
-                          );
-                        }),
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton(
-                    onPressed: _toggleDetect,
-                    child: Text(_detecting ? "Stop" : "Detect"),
-                  ),
-                  if (_detecting) ...[
-                    const SizedBox(height: 8),
-                    Column(
-                      children: [
-                        Text(
-                          "Avg brightness: ${_avgBrightness.toStringAsFixed(1)}",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                        Text(
-                          "Min Max: ${minVal.toStringAsFixed(1)} / ${maxVal.toStringAsFixed(1)}",
-                          style: const TextStyle(fontSize: 16),
-                        ),
-                      ],
+            flex: 2,
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text("Width: ${boxWidth.toStringAsFixed(0)}"),
+                    Slider(
+                      min: 20,
+                      max: 500,
+                      value: boxWidth,
+                      onChanged:
+                          (v) => setState(() {
+                            boxWidth = v.clamp(
+                              20.0,
+                              (_previewSize?.width ?? v) - (_boxOrigin?.dx ?? 0),
+                            );
+                          }),
                     ),
+                    Text("Height: ${boxHeight.toStringAsFixed(0)}"),
+                    Slider(
+                      min: 20,
+                      max: 500,
+                      value: boxHeight,
+                      onChanged:
+                          (v) => setState(() {
+                            boxHeight = v.clamp(
+                              20.0,
+                              (_previewSize?.height ?? v) - (_boxOrigin?.dy ?? 0),
+                            );
+                          }),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: _toggleDetect,
+                      child: Text(_detecting ? "Stop" : "Detect"),
+                    ),
+                    if (_detecting) ...[
+                      const SizedBox(height: 8),
+                      Column(
+                        children: [
+
+                          Text(
+                            "Avg brightness: ${_avgBrightness.toStringAsFixed(1)} ",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          Text(
+                            "Min Max: ${minVal.toStringAsFixed(1)} / ${maxVal.toStringAsFixed(1)}",
+                            style: const TextStyle(fontSize: 16),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                "Led on/off : ",
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                              Text(
+                                ledOn == false? "OFF": "ON",
+                                style: const TextStyle(fontSize: 16),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
             ),
           ),

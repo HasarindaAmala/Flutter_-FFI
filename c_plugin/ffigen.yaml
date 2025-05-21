@@ -18,3 +18,4 @@ functions:
     - "detect_bright_regions"
     - "detect_led_on"
     - "process_frame"
+    - "process_frame_color"

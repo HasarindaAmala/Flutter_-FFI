@@ -66,6 +66,22 @@ void process_frame(
         double* out_values
 );
 
+void process_frame_color(
+        const uint8_t* y_plane,
+        const uint8_t* u_plane,
+        const uint8_t* v_plane,
+        int32_t width,
+        int32_t height,
+        int32_t y_row_stride,
+        int32_t uv_row_stride,
+        int32_t uv_pixel_stride,
+        int32_t x0,
+        int32_t y0,
+        int32_t w,
+        int32_t h,
+        double* out_values   // length = 5: [Ycurr, Ymin, Ymax, hue, sat]
+);
+
 //typedef struct {
 //    int isOn;
 //    int isGreen;

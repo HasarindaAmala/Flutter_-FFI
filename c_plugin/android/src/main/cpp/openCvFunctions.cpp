@@ -2,6 +2,8 @@
 #include <opencv2/opencv.hpp>
 #include <cmath>
 #include <vector>
+#include <limits>
+#include <cstdint>
 #include <algorithm>
 
 
@@ -101,41 +103,155 @@ void process_frame(
     static double minValue = std::numeric_limits<double>::infinity();
     static double maxValue = -std::numeric_limits<double>::infinity();
 
-    // 1) Centre‐patch size: ¼ of ROI, clamped 8–64 px
-    int32_t patchW = w / 4;
-    if (patchW < 8)   patchW = 8;
-    else if (patchW > 64) patchW = 64;
+    // 1) Decide ROI vs centre patch
 
-    int32_t patchH = h / 4;
-    if (patchH < 8)   patchH = 8;
-    else if (patchH > 64) patchH = 64;
+    int32_t roiX = x0,    roiY = y0;
+    int32_t roiW = w,     roiH = h;
 
-    // 2) Top‐left of that patch, centred in the ROI
-    int32_t cx = x0 + (w - patchW) / 2;
-    int32_t cy = y0 + (h - patchH) / 2;
 
-    // 3) Sum only the centre patch Y values
-    uint64_t sum = 0;
-    for (int row = 0; row < patchH; row++) {
-        const uint8_t* ptr = y_plane + (cy + row) * row_stride + cx;
-        for (int col = 0; col < patchW; col++) {
-            sum += ptr[col];
+    // 2) Build 256-bin histogram
+    std::array<int,256> hist = {};
+    int total = 0;
+    for (int r = 0; r < roiH; ++r) {
+        const uint8_t* rowPtr = y_plane + (roiY + r)*row_stride + roiX;
+        for (int c = 0; c < roiW; ++c) {
+            ++hist[rowPtr[c]];
+            ++total;
         }
     }
-    double currentValue = static_cast<double>(sum) / (patchW * patchH);
 
-    // 4) Update running min/max
-    if (currentValue < minValue) minValue = currentValue;
-    if (currentValue > maxValue) maxValue = currentValue;
+    // 3) Compute mean
+    double sumVal = 0.0;
+    for (int v = 0; v < 256; ++v) {
+        sumVal += double(v) * hist[v];
+    }
+    double mean = sumVal / total;
 
-    // 5) Write out: [ current, min, max ]
+    // 4) Compute median
+    int cum=0, mid = total/2;
+    double median = 0;
+    for (int v = 0; v < 256; ++v) {
+        cum += hist[v];
+        if (cum >= mid) { median = v; break; }
+    }
+
+    // 5) Compute trimmed‐mean (drop 10% low/high)
+    int trim = total / 10;
+    int lowCut=trim, highCut=total-trim;
+    int running=0;
+    double trimSum=0;
+    for (int v=0; v<256; ++v) {
+        int count = hist[v];
+        if (running + count <= lowCut) {
+            running += count;
+            continue;
+        }
+        if (running >= highCut) break;
+        // some or all of this bin
+        int start = std::max(0, lowCut - running);
+        int   end = std::min(count, highCut - running);
+        int used = end - start;
+        trimSum += double(v) * used;
+        running += count;
+    }
+    double trimmed = trimSum / double(highCut - lowCut);
+
+    // 6) Blend for a robust current value
+    double currentValue = (mean + median + trimmed) / 3.0;
+
+    // 7) Update running min/max
+    if      (currentValue < minValue) minValue = currentValue;
+    else if (currentValue > maxValue) maxValue = currentValue;
+
+    // 8) Output
     out_values[0] = currentValue;
     out_values[1] = minValue;
     out_values[2] = maxValue;
-    // 4) Return average over that patch
-
 }
-//DetectionResult result;
+void process_frame_color(
+        const uint8_t* y_plane,
+        const uint8_t* u_plane,
+        const uint8_t* v_plane,
+        int32_t width,
+        int32_t height,
+        int32_t y_row_stride,
+        int32_t uv_row_stride,
+        int32_t uv_pixel_stride,
+        int32_t x0,
+        int32_t y0,
+        int32_t w,
+        int32_t h,
+        double* out_values   // length = 6: [Ycurr, Ymin, Ymax, hue, sat, ledOn]
+) {
+    // --- sliding window state for dynamic threshold ---
+    constexpr int WINDOW = 30;
+    static double history[WINDOW];
+    static int    idx     = 0;
+    static bool   full    = false;
+    static bool   ledOn   = false;
+    const double  HYSTFRAC = 0.1;  // hysteresis as fraction of span (10%)
+
+    // 1) Compute average Y over the ROI
+    uint64_t sumY = 0;
+    for (int r = 0; r < h; ++r) {
+        const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
+        for (int c = 0; c < w; ++c) {
+            sumY += yp[c];
+        }
+    }
+    double Y = double(sumY) / (w * h);
+
+    // 2) Push into circular history buffer
+    history[idx] = Y;
+    idx = (idx + 1) % WINDOW;
+    if (idx == 0) full = true;
+
+    // 3) Compute dynamic min/max over valid samples
+    int count = full ? WINDOW : idx;
+    double dynMin = history[0], dynMax = history[0];
+    for (int i = 1; i < count; ++i) {
+        if (history[i] < dynMin) dynMin = history[i];
+        if (history[i] > dynMax) dynMax = history[i];
+    }
+
+    // 4) Compute hue & saturation as before
+    uint64_t sumU = 0, sumV = 0;
+    int      countUV = 0;
+    for (int r = 0; r < h; r += 2) {
+        const uint8_t* up = u_plane + ((y0 + r)/2) * uv_row_stride + (x0/2)*uv_pixel_stride;
+        const uint8_t* vp = v_plane + ((y0 + r)/2) * uv_row_stride + (x0/2)*uv_pixel_stride;
+        int blocks = (w + 1) / 2;
+        for (int b = 0; b < blocks; ++b) {
+            sumU += *up;  sumV += *vp;
+            up += uv_pixel_stride;
+            vp += uv_pixel_stride;
+            ++countUV;
+        }
+    }
+    double U = double(sumU)/countUV - 128.0;
+    double V = double(sumV)/countUV - 128.0;
+    double hue = std::atan2(V, U) * 180.0 / M_PI;
+    if (hue < 0) hue += 360.0;
+    double sat = std::sqrt(U*U + V*V) / 128.0;
+
+    // 5) Dynamic threshold + hysteresis
+    double mid   = (dynMin + dynMax) * 0.5;
+    double margin= (dynMax - dynMin) * HYSTFRAC;
+    if (!ledOn && Y < mid - margin) {
+        ledOn = true;
+    } else if (ledOn && Y > mid + margin) {
+        ledOn = false;
+    }
+
+    // 6) Write outputs
+    out_values[0] = Y;        // current brightness
+    out_values[1] = dynMin;   // dynamic minimum
+    out_values[2] = dynMax;   // dynamic maximum
+    out_values[3] = hue;      // hue
+    out_values[4] = sat;      // saturation
+    out_values[5] = ledOn ? 1.0 : 0.0;  // LED on/off flag
+}
+//DetectionR90esult result;
 //
 //DetectionResult *
 //process_frame(unsigned char *yuvData, int width, int height, int centerX, int centerY, int radius) {

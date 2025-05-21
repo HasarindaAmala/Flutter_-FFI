@@ -204,6 +204,77 @@ class NativeLibrary {
               ffi.Pointer<ffi.Double>,
             )
           >();
+
+  void process_frame_color(
+    ffi.Pointer<ffi.Uint8> y_plane,
+    ffi.Pointer<ffi.Uint8> u_plane,
+    ffi.Pointer<ffi.Uint8> v_plane,
+    int width,
+    int height,
+    int y_row_stride,
+    int uv_row_stride,
+    int uv_pixel_stride,
+    int x0,
+    int y0,
+    int w,
+    int h,
+    ffi.Pointer<ffi.Double> out_values,
+  ) {
+    return _process_frame_color(
+      y_plane,
+      u_plane,
+      v_plane,
+      width,
+      height,
+      y_row_stride,
+      uv_row_stride,
+      uv_pixel_stride,
+      x0,
+      y0,
+      w,
+      h,
+      out_values,
+    );
+  }
+
+  late final _process_frame_colorPtr = _lookup<
+    ffi.NativeFunction<
+      ffi.Void Function(
+        ffi.Pointer<ffi.Uint8>,
+        ffi.Pointer<ffi.Uint8>,
+        ffi.Pointer<ffi.Uint8>,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Pointer<ffi.Double>,
+      )
+    >
+  >('process_frame_color');
+  late final _process_frame_color =
+      _process_frame_colorPtr
+          .asFunction<
+            void Function(
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Uint8>,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              ffi.Pointer<ffi.Double>,
+            )
+          >();
 }
 
 const int _VCRT_COMPILER_PREPROCESSOR = 1;

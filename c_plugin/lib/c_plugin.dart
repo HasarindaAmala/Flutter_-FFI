@@ -153,5 +153,43 @@ List<double> processFrameBrightness(
   return [current, minVal, maxVal];
 }
 
+List<double> processFrameColor({
+  required Uint8List yPlane,
+  required Uint8List uPlane,
+  required Uint8List vPlane,
+  required int width,
+  required int height,
+  required int yRowStride,
+  required int uvRowStride,
+  required int uvPixelStride,
+  required Rect roi,
+}) {
+  // copy YUV planes
+  final yPtr = calloc<Uint8>(yPlane.length)..asTypedList(yPlane.length).setAll(0, yPlane);
+  final uPtr = calloc<Uint8>(uPlane.length)..asTypedList(uPlane.length).setAll(0, uPlane);
+  final vPtr = calloc<Uint8>(vPlane.length)..asTypedList(vPlane.length).setAll(0, vPlane);
+
+  // output buffer of 5 doubles
+  final outPtr = calloc<Double>(5);
+
+  _bindings.process_frame_color(
+    yPtr, uPtr, vPtr,
+    width, height,
+    yRowStride, uvRowStride, uvPixelStride,
+    roi.left.toInt(), roi.top.toInt(),
+    roi.width.toInt(), roi.height.toInt(),
+    outPtr,
+  );
+
+  final results = List<double>.generate(6, (i) => outPtr[i]);
+
+  calloc.free(yPtr);
+  calloc.free(uPtr);
+  calloc.free(vPtr);
+  calloc.free(outPtr);
+
+  return results;
+}
+
 
 
