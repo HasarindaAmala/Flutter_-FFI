@@ -1,0 +1,54 @@
+#ifndef C_PLUGIN_API_H
+#define C_PLUGIN_API_H
+
+#include <stdint.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/// very short-lived
+int   sum(int a, int b);
+
+/// longer-lived
+int   sum_long_running(int a, int b);
+
+/// compile-time OpenCV version
+const char* get_opencv_version(void);
+
+/// find up to max_regions bright blobs in an NV21 frame
+void  detect_bright_regions(
+        const uint8_t* nv21_data,
+        int width,
+        int height,
+        uint8_t threshold,
+        int max_regions,
+        int* bbox_out,
+        int* count_out
+);
+
+/// returns 1 if LED is on in ROI, else 0
+uint8_t detect_led_on(
+        const uint8_t* nv21_data,
+        int width,
+        int height,
+        uint8_t threshold,
+        int x, int y, int w, int h
+);
+
+void process_frame(
+        const uint8_t* y_plane,
+        int32_t width,
+        int32_t height,
+        int32_t row_stride,
+        int32_t x0,
+        int32_t y0,
+        int32_t w,
+        int32_t h,
+        double* out_values
+);
+
+#ifdef __cplusplus
+}
+#endif
+#endif // C_PLUGIN_API_H

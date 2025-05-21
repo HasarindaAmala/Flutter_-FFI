@@ -1,5 +1,8 @@
+import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:lifi_reciever/transmeter/transmeterScreen.dart';
+import '../Detection/detection.dart';
+import '../Detection/detectionTest.dart';
 import '../reciever/recieverScreen.dart';
 
 class homeScreen extends StatefulWidget {
@@ -67,11 +70,12 @@ class _homeScreenState extends State<homeScreen> {
                           image: AssetImage("Asserts/buttonTx.png")),
                     ),
                     GestureDetector(
-                      onTap: (){
+                      onTap: () async {
+                        final cameras = await availableCameras();
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => (
-                              ReceiverScreen()
+                              DetectionScreen()
                           )),
                         );
                       },

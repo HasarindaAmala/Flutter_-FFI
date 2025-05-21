@@ -121,6 +121,7 @@ class _transmeterScreenState extends State<transmeterScreen> with SingleTickerPr
     double width = MediaQuery.of(context).size.width;
     double height = MediaQuery.of(context).size.height;
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         backgroundColor: Colors.transparent,
@@ -167,320 +168,322 @@ class _transmeterScreenState extends State<transmeterScreen> with SingleTickerPr
 
 
       ),
-      body: Stack(
-
-        children: [
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Padding(
-                  padding:EdgeInsets.only(top: height*0.05),
-                  child: Container(
-                    width: width*0.9,
-                    height: height*0.33,
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding:  EdgeInsets.only(left: 20.05,top: height*0.02),
-                          child: Row(
-
-                            children: [
-                              Text("Share IT",style: TextStyle(color: Colors.white),),
-                              SizedBox(width: 10.0,),
-                              Icon(Icons.send_time_extension_rounded,color: Colors.white,),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 20,top: 10.0),
-                          child: Container(
-                            width: width*0.8,
-                            height: height*0.18,
-                            decoration: BoxDecoration(
-                                color: Colors.white,
-                              borderRadius: BorderRadius.circular(10.0)
-                            ),
-                            child: Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.add,color: Colors.black38,),
-                                  Text("Attach or write data to transfer",style: TextStyle(color: Colors.black38),),
-                                ],
-                              ),
+      body: SingleChildScrollView(
+        child: Stack(
+        
+          children: [
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Padding(
+                    padding:EdgeInsets.only(top: height*0.05),
+                    child: Container(
+                      width: width*0.9,
+                      height: height*0.33,
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding:  EdgeInsets.only(left: 20.05,top: height*0.02),
+                            child: Row(
+        
+                              children: [
+                                Text("Share IT",style: TextStyle(color: Colors.white),),
+                                SizedBox(width: 10.0,),
+                                Icon(Icons.send_time_extension_rounded,color: Colors.white,),
+                              ],
                             ),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10.0,right: 20.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              IconButton(onPressed: (){}, icon: Icon(Icons.attachment,size: 25,color: Colors.white,)),
-                              ElevatedButton(onPressed: (){}, child: Text("send")),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 20.0),
-                  child: Container(
-                    width: width*0.9,
-                    height: height*0.13,
-
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0,top: 10.0),
-                          child: Text("LED Controller",style: TextStyle(color: Colors.white),),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 12.0,right: 12.0,top: 6.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              DropdownButton(
-                                dropdownColor: Colors.black87,
-
-                                style: TextStyle(color: Colors.white),
-                                // Initial Value
-                                value: dropdownvalue,
-                                // Down Arrow Icon
-                                icon: const Icon(Icons.keyboard_arrow_down,color: Colors.white,),
-
-                                // Array list of items
-                                items:
-                                items.map((String items) {
-                                  return DropdownMenuItem(value: items, child: Text(items));
-                                }).toList(),
-                                // After selecting the desired option,it will
-                                // change button value to selected value
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    dropdownvalue = newValue!;
-                                  });
-                                },
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20,top: 10.0),
+                            child: Container(
+                              width: width*0.8,
+                              height: height*0.18,
+                              decoration: BoxDecoration(
+                                  color: Colors.white,
+                                borderRadius: BorderRadius.circular(10.0)
                               ),
-                              SizedBox(
-                                width: width*0.2,
-                                height: 20.0,
-                                child: TextFormField(
-                                  style: TextStyle(
-                                    color: Colors.white
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  controller: interval,
-                                  decoration: InputDecoration(
-                                    hintText: "Interval",
-                                    hintStyle: TextStyle(color: Colors.white),
-                                  ),
-
+                              child: Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(Icons.add,color: Colors.black38,),
+                                    Text("Attach or write data to transfer",style: TextStyle(color: Colors.black38),),
+                                  ],
                                 ),
                               ),
-                              ElevatedButton(onPressed: (){
-                                // 1) Figure out your color index & RGB
-                                final idx = items.indexOf(dropdownvalue);
-                                final rgb = colorPresets[idx];
-
-
-
-                                // 2) Parse interval text exactly once:
-                                final text = interval.text.trim();
-                                final msInput = int.tryParse(text) ?? 0;
-
-                                // 3) Compute hi/lo _before_ building the list:
-                                final hi = (msInput >> 8) & 0xFF;   // high byte
-                                final lo = msInput & 0xFF;          // low  byte
-
-                                // 4) Build a true List<int> of length 6
-                                final cmd = <int>[
-                                  2,          // your blink‐mode
-                                  rgb[0],     // R
-                                  rgb[1],     // G
-                                  rgb[2],     // B
-                                  hi,         // interval high byte
-                                  lo
-
-                                  // interval low  byte
-                                ];
-
-                                print("🔵 Sending command: $cmd");  // debug, should show 6 items
-                                transmeter_logic.connectionControll.sendCommand(cmd);
-                              },
-                              onLongPress: (){
-                                final cmd = <int>[
-                                  0,          // your blink‐mode
-                                  0,     // R
-                                  0,     // G
-                                  0,     // B
-                                  hi,         // interval high byte
-                                  lo          // interval low  byte
-                                ];
-                                transmeter_logic.connectionControll.sendCommand(cmd);
-                              },
-                                  child: Text("Send"))
-                            ],
+                            ),
                           ),
-                        ),
-                      ],
+                          Padding(
+                            padding: const EdgeInsets.only(top: 10.0,right: 20.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                IconButton(onPressed: (){}, icon: Icon(Icons.attachment,size: 25,color: Colors.white,)),
+                                ElevatedButton(onPressed: (){}, child: Text("send")),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 20.0),
-                  child: Container(
-                    width: width*0.9,
-                    height: height*0.2,
-
-                    decoration: BoxDecoration(
-                      color: Colors.black87,
-                      borderRadius: BorderRadius.circular(10.0),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0,top: 10.0),
-                          child: Text("Matrix Controller",style: TextStyle(color: Colors.white),),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 12.0,top: 10.0),
-                          child: DropdownButton(
-                            dropdownColor: Colors.black87,
-
-                            style: TextStyle(color: Colors.white),
-                            // Initial Value
-                            value: bulbIdx,
-                            // Down Arrow Icon
-                            icon: const Icon(Icons.keyboard_arrow_down,color: Colors.white,),
-
-                            // Array list of items
-                            items:
-                            index.map((String index) {
-                              return DropdownMenuItem(value: index, child: Text(index));
-                            }).toList(),
-                            // After selecting the desired option,it will
-                            // change button value to selected value
-                            onChanged: (String? newValue) {
-                              setState(() {
-                                bulbIdx = newValue!;
-                              });
-                            },
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: Container(
+                      width: width*0.9,
+                      height: height*0.13,
+        
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0,top: 10.0),
+                            child: Text("LED Controller",style: TextStyle(color: Colors.white),),
                           ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(left: 12.0,right: 12.0,top: 6.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              DropdownButton(
-                                dropdownColor: Colors.black87,
-
-                                style: TextStyle(color: Colors.white),
-                                // Initial Value
-                                value: dropdownvalueMatrix,
-                                // Down Arrow Icon
-                                icon: const Icon(Icons.keyboard_arrow_down,color: Colors.white,),
-
-                                // Array list of items
-                                items:
-                                items.map((String items) {
-                                  return DropdownMenuItem(value: items, child: Text(items));
-                                }).toList(),
-                                // After selecting the desired option,it will
-                                // change button value to selected value
-                                onChanged: (String? newValue) {
-                                  setState(() {
-                                    dropdownvalueMatrix = newValue!;
-                                  });
-                                },
-                              ),
-                              SizedBox(
-                                width: width*0.2,
-                                height: 20.0,
-                                child: TextFormField(
-                                  style: TextStyle(
-                                      color: Colors.white
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  controller: intervalMatrix,
-                                  decoration: InputDecoration(
-                                    hintText: "Interval",
-                                    hintStyle: TextStyle(color: Colors.white),
-                                  ),
-
-                                ),
-                              ),
-                              ElevatedButton(onPressed: (){
-                                // 1) Figure out your color index & RGB
-                                final idx = items.indexOf(dropdownvalueMatrix);
-                                final rgb = colorPresets[idx];
-                                final bulbIndex = int.parse(bulbIdx) ?? 0;
-
-
-                                // 2) Parse interval text exactly once:
-                                final text = intervalMatrix.text.trim();
-                                final msInput = int.tryParse(text) ?? 0;
-
-                                // 3) Compute hi/lo _before_ building the list:
-                                final hi = (msInput >> 8) & 0xFF;   // high byte
-                                final lo = msInput & 0xFF;          // low  byte
-
-                                // 4) Build a true List<int> of length 6
-                                final cmd = <int>[
-                                  3,          // your blink‐mode
-                                  rgb[0],     // R
-                                  rgb[1],     // G
-                                  rgb[2],     // B
-                                  hi,         // interval high byte
-                                  lo,
-                                  bulbIndex// interval low  byte
-                                ];
-
-                                print("🔵 Sending command: $cmd");  // debug, should show 6 items
-                                transmeter_logic.connectionControll.sendCommand(cmd);
-                              },
-                                  onLongPress: (){
-                                    final cmd = <int>[
-                                      0,          // your blink‐mode
-                                      0,     // R
-                                      0,     // G
-                                      0,     // B
-                                      hi,         // interval high byte
-                                      lo          // interval low  byte
-                                    ];
-                                    transmeter_logic.connectionControll.sendCommand(cmd);
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12.0,right: 12.0,top: 6.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                DropdownButton(
+                                  dropdownColor: Colors.black87,
+        
+                                  style: TextStyle(color: Colors.white),
+                                  // Initial Value
+                                  value: dropdownvalue,
+                                  // Down Arrow Icon
+                                  icon: const Icon(Icons.keyboard_arrow_down,color: Colors.white,),
+        
+                                  // Array list of items
+                                  items:
+                                  items.map((String items) {
+                                    return DropdownMenuItem(value: items, child: Text(items));
+                                  }).toList(),
+                                  // After selecting the desired option,it will
+                                  // change button value to selected value
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      dropdownvalue = newValue!;
+                                    });
                                   },
-                                  child: Text("Send"))
-                            ],
+                                ),
+                                SizedBox(
+                                  width: width*0.2,
+                                  height: 20.0,
+                                  child: TextFormField(
+                                    style: TextStyle(
+                                      color: Colors.white
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    controller: interval,
+                                    decoration: InputDecoration(
+                                      hintText: "Interval",
+                                      hintStyle: TextStyle(color: Colors.white),
+                                    ),
+        
+                                  ),
+                                ),
+                                ElevatedButton(onPressed: (){
+                                  // 1) Figure out your color index & RGB
+                                  final idx = items.indexOf(dropdownvalue);
+                                  final rgb = colorPresets[idx];
+        
+        
+        
+                                  // 2) Parse interval text exactly once:
+                                  final text = interval.text.trim();
+                                  final msInput = int.tryParse(text) ?? 0;
+        
+                                  // 3) Compute hi/lo _before_ building the list:
+                                  final hi = (msInput >> 8) & 0xFF;   // high byte
+                                  final lo = msInput & 0xFF;          // low  byte
+        
+                                  // 4) Build a true List<int> of length 6
+                                  final cmd = <int>[
+                                    2,          // your blink‐mode
+                                    rgb[0],     // R
+                                    rgb[1],     // G
+                                    rgb[2],     // B
+                                    hi,         // interval high byte
+                                    lo
+        
+                                    // interval low  byte
+                                  ];
+        
+                                  print("🔵 Sending command: $cmd");  // debug, should show 6 items
+                                  transmeter_logic.connectionControll.sendCommand(cmd);
+                                },
+                                onLongPress: (){
+                                  final cmd = <int>[
+                                    0,          // your blink‐mode
+                                    0,     // R
+                                    0,     // G
+                                    0,     // B
+                                    hi,         // interval high byte
+                                    lo          // interval low  byte
+                                  ];
+                                  transmeter_logic.connectionControll.sendCommand(cmd);
+                                },
+                                    child: Text("Send"))
+                              ],
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                )
-              ],
+                  Padding(
+                    padding: const EdgeInsets.only(top: 20.0),
+                    child: Container(
+                      width: width*0.9,
+                      height: height*0.2,
+        
+                      decoration: BoxDecoration(
+                        color: Colors.black87,
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: const EdgeInsets.only(left: 8.0,top: 10.0),
+                            child: Text("Matrix Controller",style: TextStyle(color: Colors.white),),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12.0,top: 10.0),
+                            child: DropdownButton(
+                              dropdownColor: Colors.black87,
+        
+                              style: TextStyle(color: Colors.white),
+                              // Initial Value
+                              value: bulbIdx,
+                              // Down Arrow Icon
+                              icon: const Icon(Icons.keyboard_arrow_down,color: Colors.white,),
+        
+                              // Array list of items
+                              items:
+                              index.map((String index) {
+                                return DropdownMenuItem(value: index, child: Text(index));
+                              }).toList(),
+                              // After selecting the desired option,it will
+                              // change button value to selected value
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  bulbIdx = newValue!;
+                                });
+                              },
+                            ),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 12.0,right: 12.0,top: 6.0),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                DropdownButton(
+                                  dropdownColor: Colors.black87,
+        
+                                  style: TextStyle(color: Colors.white),
+                                  // Initial Value
+                                  value: dropdownvalueMatrix,
+                                  // Down Arrow Icon
+                                  icon: const Icon(Icons.keyboard_arrow_down,color: Colors.white,),
+        
+                                  // Array list of items
+                                  items:
+                                  items.map((String items) {
+                                    return DropdownMenuItem(value: items, child: Text(items));
+                                  }).toList(),
+                                  // After selecting the desired option,it will
+                                  // change button value to selected value
+                                  onChanged: (String? newValue) {
+                                    setState(() {
+                                      dropdownvalueMatrix = newValue!;
+                                    });
+                                  },
+                                ),
+                                SizedBox(
+                                  width: width*0.2,
+                                  height: 20.0,
+                                  child: TextFormField(
+                                    style: TextStyle(
+                                        color: Colors.white
+                                    ),
+                                    keyboardType: TextInputType.number,
+                                    controller: intervalMatrix,
+                                    decoration: InputDecoration(
+                                      hintText: "Interval",
+                                      hintStyle: TextStyle(color: Colors.white),
+                                    ),
+        
+                                  ),
+                                ),
+                                ElevatedButton(onPressed: (){
+                                  // 1) Figure out your color index & RGB
+                                  final idx = items.indexOf(dropdownvalueMatrix);
+                                  final rgb = colorPresets[idx];
+                                  final bulbIndex = int.parse(bulbIdx) ?? 0;
+        
+        
+                                  // 2) Parse interval text exactly once:
+                                  final text = intervalMatrix.text.trim();
+                                  final msInput = int.tryParse(text) ?? 0;
+        
+                                  // 3) Compute hi/lo _before_ building the list:
+                                  final hi = (msInput >> 8) & 0xFF;   // high byte
+                                  final lo = msInput & 0xFF;          // low  byte
+        
+                                  // 4) Build a true List<int> of length 6
+                                  final cmd = <int>[
+                                    3,          // your blink‐mode
+                                    rgb[0],     // R
+                                    rgb[1],     // G
+                                    rgb[2],     // B
+                                    hi,         // interval high byte
+                                    lo,
+                                    bulbIndex// interval low  byte
+                                  ];
+        
+                                  print("🔵 Sending command: $cmd");  // debug, should show 6 items
+                                  transmeter_logic.connectionControll.sendCommand(cmd);
+                                },
+                                    onLongPress: (){
+                                      final cmd = <int>[
+                                        0,          // your blink‐mode
+                                        0,     // R
+                                        0,     // G
+                                        0,     // B
+                                        hi,         // interval high byte
+                                        lo          // interval low  byte
+                                      ];
+                                      transmeter_logic.connectionControll.sendCommand(cmd);
+                                    },
+                                    child: Text("Send"))
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ),
-          ),
-
-        ],
+        
+          ],
+        ),
       ),
     );
   }

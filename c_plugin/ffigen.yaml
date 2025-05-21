@@ -8,10 +8,13 @@ output: "lib/c_plugin_bindings_generated.dart"
 
 headers:
   entry-points:
-    - "src/c_plugin.h"
+    - "src/c_plugin_api.h"
 
 functions:
   include:
     - "sum"
     - "sum_long_running"
     - "get_opencv_version"
+    - "detect_bright_regions"
+    - "detect_led_on"
+    - "process_frame"

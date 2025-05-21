@@ -30,6 +30,42 @@ FFI_PLUGIN_EXPORT int sum_long_running(int a, int b);
 /// Returns the OpenCV compile-time version string, e.g. "4.5.2"
 FFI_PLUGIN_EXPORT const char* get_opencv_version();
 
+void detect_bright_regions(
+        const uint8_t* nv21_data,
+        int width,
+        int height,
+        uint8_t threshold,
+        int max_regions,
+        int* bbox_out,
+        int* count_out
+);
+
+/**
+ * Detect ON/OFF state of LED inside ROI.
+ * @returns 1 if LED is ON, 0 if OFF.
+ */
+uint8_t detect_led_on(
+        const uint8_t* nv21_data,
+        int width,
+        int height,
+        uint8_t threshold,
+        int x,
+        int y,
+        int w,
+        int h
+);
+void process_frame(
+        const uint8_t* y_plane,
+        int32_t width,
+        int32_t height,
+        int32_t row_stride,
+        int32_t x0,
+        int32_t y0,
+        int32_t w,
+        int32_t h,
+        double* out_values
+);
+
 //typedef struct {
 //    int isOn;
 //    int isGreen;
