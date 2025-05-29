@@ -5,7 +5,12 @@
 #include <limits>
 #include <cstdint>
 #include <algorithm>
+#include <android/log.h>
 
+#define LOG_TAG "LIFI_Native"
+#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
 
 using namespace cv;
 extern "C" {
@@ -181,7 +186,7 @@ void process_frame_color(
         int32_t y0,
         int32_t w,
         int32_t h,
-        double* out_values   // length = 6: [Ycurr, Ymin, Ymax, hue, sat, ledOn]
+        double* out_values   // length = 6: [Ycurr, Ymin, Ymax, hue, sat, ledOn], //length 7
 ) {
     // --- sliding window state for dynamic threshold ---
     constexpr int WINDOW = 30;
@@ -242,6 +247,18 @@ void process_frame_color(
     } else if (ledOn && Y > mid + margin) {
         ledOn = false;
     }
+    LOGD("Hue: %.2f, Sat: %.2f", hue, sat);
+    // 7) Detect LED color
+    int ledColor = 0;
+
+    //if (sat > 0.1) {
+        if (hue >= 105 && hue < 135) ledColor = 1; // Red
+        else if (hue >= 230 && hue < 270) ledColor = 2;  // Green
+        else if (hue >= 300 && hue < 360) ledColor = 3; // Blue
+        else if (hue >= 160 && hue < 200)  ledColor = 4;  // Yellow
+        else if (hue >= 290 && hue < 310) ledColor = 5; // Cyan
+        else if (hue >= 5 && hue < 50) ledColor = 6; // Magenta
+    //}
 
     // 6) Write outputs
     out_values[0] = Y;        // current brightness
@@ -250,6 +267,7 @@ void process_frame_color(
     out_values[3] = hue;      // hue
     out_values[4] = sat;      // saturation
     out_values[5] = ledOn ? 1.0 : 0.0;  // LED on/off flag
+    out_values[6] = static_cast<double>(ledColor); //LED color
 }
 //DetectionR90esult result;
 //

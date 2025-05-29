@@ -30,6 +30,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
   bool _detecting = false;
   double _avgBrightness = 0;
+  String _ledColorName = "Unknown";
 
   Size? _previewSize; // logical px of preview area
 
@@ -111,6 +112,23 @@ class _DetectionScreenState extends State<DetectionScreen> {
   //   setState(() => _avgBrightness = avg);
   //   }
   // }
+
+  // Color hueToColor(double hue) {
+  //   final h = hue / 60.0;
+  //   final c = 1.0;
+  //   final x = c * (1 - (h % 2 - 1).abs());
+  //
+  //   double r = 0, g = 0, b = 0;
+  //   if (h >= 0 && h < 1)      { r = c; g = x; b = 0; }
+  //   else if (h >= 1 && h < 2) { r = x; g = c; b = 0; }
+  //   else if (h >= 2 && h < 3) { r = 0; g = c; b = x; }
+  //   else if (h >= 3 && h < 4) { r = 0; g = x; b = c; }
+  //   else if (h >= 4 && h < 5) { r = x; g = 0; b = c; }
+  //   else if (h >= 5 && h < 6) { r = c; g = 0; b = x; }
+  //
+  //   return Color.fromARGB(255, (r * 255).toInt(), (g * 255).toInt(), (b * 255).toInt());
+  // }
+
   void _onFrame(CameraImage img) {
     if (_boxOrigin == null || _previewSize == null) return;
     final pxW = img.width, pxH = img.height;
@@ -139,6 +157,9 @@ class _DetectionScreenState extends State<DetectionScreen> {
     final brightness = stats[0];
     final hue        = stats[3];
     final sat        = stats[4];
+    final ledHue     = stats[6];
+    final colorCode  = stats[6].toInt(); // Extract color code
+    final colorName  = ledColorCodeToName(colorCode);
 
     if (mounted) {
       setState(() {
@@ -146,6 +167,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
         maxVal = stats[2];
         minVal = stats[1];
         ledOn = stats[5] == 1.0 ? false: true;
+        _ledColorName = colorName;
         // record into history
         if (_ledHistory.length >= _kMaxHistory) {
           _ledHistory.removeAt(0);
@@ -282,7 +304,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
         
             // Controls
             Expanded(
-              flex: 2,
+              flex: 4,
               child: SingleChildScrollView(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -322,9 +344,44 @@ class _DetectionScreenState extends State<DetectionScreen> {
                       ),
                       if (_detecting) ...[
                         const SizedBox(height: 8),
+                        // Column(
+                        //   children: [
+                        //
+                        //     Text(
+                        //       "Avg brightness: ${_avgBrightness.toStringAsFixed(1)} ",
+                        //       style: const TextStyle(fontSize: 16),
+                        //     ),
+                        //     Text(
+                        //       "Min Max: ${minVal.toStringAsFixed(1)} / ${maxVal.toStringAsFixed(1)}",
+                        //       style: const TextStyle(fontSize: 16),
+                        //     ),
+                        //     Row(
+                        //       mainAxisAlignment: MainAxisAlignment.center,
+                        //       children: [
+                        //         Text(
+                        //           "Led on/off : ",
+                        //           style: const TextStyle(fontSize: 16),
+                        //         ),
+                        //         Text(
+                        //           ledOn == false? "OFF": "ON",
+                        //           style: const TextStyle(fontSize: 16),
+                        //         ),
+                        //       ],
+                        //     ),
+                        //     SizedBox(
+                        //       height: 15.0,
+                        //     ),
+                        //     SizedBox(
+                        //       height: 120,
+                        //       child: CustomPaint(
+                        //         painter: LedLinePainter(_ledHistory),
+                        //         child: Container(),
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
                         Column(
                           children: [
-        
                             Text(
                               "Avg brightness: ${_avgBrightness.toStringAsFixed(1)} ",
                               style: const TextStyle(fontSize: 16),
@@ -336,19 +393,22 @@ class _DetectionScreenState extends State<DetectionScreen> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
+                                const Text(
                                   "Led on/off : ",
-                                  style: const TextStyle(fontSize: 16),
+                                  style: TextStyle(fontSize: 16),
                                 ),
                                 Text(
-                                  ledOn == false? "OFF": "ON",
+                                  ledOn ? "ON" : "OFF",
                                   style: const TextStyle(fontSize: 16),
                                 ),
                               ],
                             ),
-                            SizedBox(
-                              height: 15.0,
+                            Text(
+                              "LED color: $_ledColorName",
+                              style: const TextStyle(fontSize: 16),
                             ),
+
+                            const SizedBox(height: 15.0),
                             SizedBox(
                               height: 120,
                               child: CustomPaint(
@@ -357,7 +417,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
                               ),
                             ),
                           ],
-                        ),
+                        )
                       ],
                     ],
                   ),
@@ -370,3 +430,17 @@ class _DetectionScreenState extends State<DetectionScreen> {
     );
   }
 }
+
+String ledColorCodeToName(int code) {
+  switch (code) {
+    case 1: return "Red";
+    case 2: return "Green";
+    case 3: return "Blue";
+    case 4: return "Yellow";
+    case 5: return "Cyan";
+    case 6: return "Magenta";
+    default: return "Unknown";
+  }
+}
+
+

@@ -169,8 +169,8 @@ List<double> processFrameColor({
   final uPtr = calloc<Uint8>(uPlane.length)..asTypedList(uPlane.length).setAll(0, uPlane);
   final vPtr = calloc<Uint8>(vPlane.length)..asTypedList(vPlane.length).setAll(0, vPlane);
 
-  // output buffer of 5 doubles
-  final outPtr = calloc<Double>(5);
+  // output buffer of 7 doubles
+  final outPtr = calloc<Double>(7);
 
   _bindings.process_frame_color(
     yPtr, uPtr, vPtr,
@@ -181,7 +181,7 @@ List<double> processFrameColor({
     outPtr,
   );
 
-  final results = List<double>.generate(6, (i) => outPtr[i]);
+  final results = List<double>.generate(7, (i) => outPtr[i]);
 
   calloc.free(yPtr);
   calloc.free(uPtr);
