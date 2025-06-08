@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:lifi_reciever/transmeter/transmeterLogic.dart';
@@ -17,6 +18,8 @@ class _transmeterScreenState extends State<transmeterScreen> with SingleTickerPr
   final transmeter_logic = Get.put(transmeterLogic());
   TextEditingController interval =  TextEditingController();
   TextEditingController intervalMatrix =  TextEditingController();
+  late StreamController<bool> isWriting;
+  late TextEditingController commandText;
   int blinkingInterval = 0;
   int hi = 0;
   int lo = 0;
@@ -28,7 +31,7 @@ class _transmeterScreenState extends State<transmeterScreen> with SingleTickerPr
       duration: const Duration(milliseconds: 900),
       vsync: this,
     );
-
+    isWriting = StreamController.broadcast();
     // Define the color animation (from white to red and back to white)
     transmeter_logic.animation = ColorTween(
       begin: Colors.white,
@@ -50,11 +53,13 @@ class _transmeterScreenState extends State<transmeterScreen> with SingleTickerPr
     transmeter_logic.controller.forward();
     transmeter_logic.connectionControll.isEnableBluetooth();
     transmeter_logic.connectionControll.RxfoundController = StreamController<bool>.broadcast();
+    commandText = TextEditingController();
   }
 
   @override
   void dispose() {
     transmeter_logic.controller.dispose();
+    commandText.dispose();
     //mapViewLogic.mapController.dispose();
     super.dispose();
   }
@@ -109,7 +114,7 @@ class _transmeterScreenState extends State<transmeterScreen> with SingleTickerPr
 
   final List<List<int>> colorPresets = [
     [255, 0,   0],   // Red
-    [0,   255, 0],   // Green
+    [0,   235, 0],   // Green
     [0,   0,   255], // Blue
     [255, 255, 0],   // Yellow
     [255, 0,   255], // Magenta
@@ -209,24 +214,59 @@ class _transmeterScreenState extends State<transmeterScreen> with SingleTickerPr
                                   color: Colors.white,
                                 borderRadius: BorderRadius.circular(10.0)
                               ),
-                              child: Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.add,color: Colors.black38,),
-                                    Text("Attach or write data to transfer",style: TextStyle(color: Colors.black38),),
-                                  ],
-                                ),
+                              child: StreamBuilder<bool>(
+                                initialData: false,
+                                stream: isWriting.stream,
+                                builder: (context, snapshot) {
+                                  if(snapshot.data == true){
+                                    return Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(8.0),
+                                        child: TextFormField(
+                                          controller: commandText,
+                                          decoration: InputDecoration(
+                                            hintText: "Type here..",
+                                            hintStyle: TextStyle(color: Colors.black),
+                                          ),
+                                          style: TextStyle(color: Colors.black),
+                                        ),
+                                      ),
+                                    );
+                                  }else{
+                                    return Center(
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(Icons.add,color: Colors.black38,),
+                                          Text("Attach or write data to transfer",style: TextStyle(color: Colors.black38),),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                }
                               ),
                             ),
                           ),
                           Padding(
                             padding: const EdgeInsets.only(top: 10.0,right: 20.0),
                             child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                IconButton(onPressed: (){}, icon: Icon(Icons.attachment,size: 25,color: Colors.white,)),
-                                ElevatedButton(onPressed: (){}, child: Text("send")),
+                                IconButton(onPressed: (){
+                                  isWriting.sink.add(true);
+                                }, icon: Icon(Icons.note_alt_outlined,color: Colors.white,)),
+                                Row(
+                                  children: [
+                                    IconButton(onPressed: (){}, icon: Icon(Icons.attachment,size: 25,color: Colors.white,)),
+                                    ElevatedButton(onPressed: (){
+                                      final cmd = commandText.text;
+                                      final text6 = utf8.encode(cmd);
+                                      print(text6);
+                                      transmeter_logic.connectionControll.sendCommand(text6);
+                                    }, child: Text("send")),
+                                  ],
+                                ),
                               ],
                             ),
                           ),

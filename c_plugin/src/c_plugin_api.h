@@ -61,10 +61,35 @@ void process_frame_color(
         int32_t y0,
         int32_t w,
         int32_t h,
-        double* out_values   // length = 5: [Ycurr, Ymin, Ymax, hue, sat]
+        double* out_values   // length = 7: [Ycurr, Ymin, Ymax, hue, sat]
 );
 
+void yuvpixel_to_hsv_c(
+        uint8_t y_val,
+        uint8_t u_val,
+        uint8_t v_val,
+        double* out_hue,
+        double* out_sat,
+        double* out_val
+);
 
+void detect_frame_color_precise(
+        const uint8_t* y_plane,
+        const uint8_t* u_plane,
+        const uint8_t* v_plane,
+        int32_t        width,
+        int32_t        height,
+        int32_t        y_row_stride,
+        int32_t        uv_row_stride,
+        int32_t        uv_pixel_stride,
+        int32_t        x0,
+        int32_t        y0,
+        int32_t        w,
+        int32_t        h,
+        double*        out_color_values  // length = 3: [hue, sat, val]
+);
+
+int classify_hsv_color(double hue, double sat, double val);
 
 #ifdef __cplusplus
 }

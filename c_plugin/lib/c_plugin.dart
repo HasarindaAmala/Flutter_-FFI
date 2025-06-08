@@ -169,8 +169,8 @@ List<double> processFrameColor({
   final uPtr = calloc<Uint8>(uPlane.length)..asTypedList(uPlane.length).setAll(0, uPlane);
   final vPtr = calloc<Uint8>(vPlane.length)..asTypedList(vPlane.length).setAll(0, vPlane);
 
-  // output buffer of 5 doubles
-  final outPtr = calloc<Double>(5);
+  // output buffer of 7 doubles
+  final outPtr = calloc<Double>(7);
 
   _bindings.process_frame_color(
     yPtr, uPtr, vPtr,
@@ -181,7 +181,7 @@ List<double> processFrameColor({
     outPtr,
   );
 
-  final results = List<double>.generate(6, (i) => outPtr[i]);
+  final results = List<double>.generate(7, (i) => outPtr[i]);
 
   calloc.free(yPtr);
   calloc.free(uPtr);
@@ -189,6 +189,100 @@ List<double> processFrameColor({
   calloc.free(outPtr);
 
   return results;
+}
+
+/// Computes [hue, sat, val] over the ROI by building a hue histogram.
+/// Returns a List<double> of length 3.
+List<double> detectFrameColorPrecise({
+  required Uint8List yPlane,
+  required Uint8List uPlane,
+  required Uint8List vPlane,
+  required int width,
+  required int height,
+  required int yRowStride,
+  required int uvRowStride,
+  required int uvPixelStride,
+  required Rect roi,
+}) {
+  final yLength = yPlane.length;
+  final uLength = uPlane.length;
+  final vLength = vPlane.length;
+  final Pointer<Uint8> yPtr = calloc<Uint8>(yLength)
+    ..asTypedList(yLength).setAll(0, yPlane);
+  final Pointer<Uint8> uPtr = calloc<Uint8>(uLength)
+    ..asTypedList(uLength).setAll(0, uPlane);
+  final Pointer<Uint8> vPtr = calloc<Uint8>(vLength)
+    ..asTypedList(vLength).setAll(0, vPlane);
+
+  // Allocate output buffer of length 3
+  final Pointer<Double> outPtr = calloc<Double>(3);
+
+  _bindings.detect_frame_color_precise(
+    yPtr,
+    uPtr,
+    vPtr,
+    width,
+    height,
+    yRowStride,
+    uvRowStride,
+    uvPixelStride,
+    roi.left.toInt(),
+    roi.top.toInt(),
+    roi.width.toInt(),
+    roi.height.toInt(),
+    outPtr,
+  );
+
+  final hue = outPtr[0];
+  final sat = outPtr[1];
+  final val = outPtr[2];
+
+  calloc.free(yPtr);
+  calloc.free(uPtr);
+  calloc.free(vPtr);
+  calloc.free(outPtr);
+
+  return [hue, sat, val];
+}
+// ----------------------------------------------------------------------------
+// HSV classification
+// ----------------------------------------------------------------------------
+
+/// Calls the native `int classify_hsv_color(double hue, double sat, double val)`.
+/// Returns an integer code (e.g. 0=unknown, 1=red, etc.) depending on your C++ implementation.
+int classifyHsvColor(double hue, double sat, double val) {
+  return _bindings.classify_hsv_color(hue, sat, val);
+}
+
+// ----------------------------------------------------------------------------
+// Single-pixel YUV → HSV conversion
+// ----------------------------------------------------------------------------
+
+/// Converts a single YUV pixel (Y, U, V in [0..255]) to HSV ([hue, sat, val]).
+/// Returns a List<double> of length 3.
+List<double> yuvPixelToHsv(int yVal, int uVal, int vVal) {
+  final Pointer<Double> outHue = calloc<Double>();
+  final Pointer<Double> outSat = calloc<Double>();
+  final Pointer<Double> outVal = calloc<Double>();
+
+  _bindings.yuvpixel_to_hsv_c(
+    yVal.toUnsigned(8),
+    uVal.toUnsigned(8),
+    vVal.toUnsigned(8),
+    outHue,
+    outSat,
+    outVal,
+  );
+
+  final hue = outHue.value;
+  final sat = outSat.value;
+  final val = outVal.value;
+
+  calloc.free(outHue);
+  calloc.free(outSat);
+  calloc.free(outVal);
+
+  return [hue, sat, val];
 }
 
 

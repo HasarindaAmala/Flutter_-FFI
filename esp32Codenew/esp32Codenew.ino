@@ -17,18 +17,32 @@ CRGB leds[NUM_LEDS];
 bool     gBlinkState   = false;
 uint32_t gLastToggleMs = 0;
 
+// Blink interval is now 16-bit:
+uint16_t gInterval     = 500;    // default 500 ms
+
 // BLE characteristic pointer
 NimBLECharacteristic* pCharacteristic = nullptr;
 
+// —————— GLOBAL STATE ——————
+uint8_t  gMode     = 0;    // 0=off, 1=solid, 2=blink
+uint8_t  gR        = 0;    // red value
+uint8_t  gG        = 0;    // green value
+uint8_t  gB        = 0;    // blue value
+uint16_t interval = 0.0;
+uint8_t  idx        = 0;// blink interval in ms
+
+bool     gBlinkState   = false;
+uint32_t gLastToggleMs = 0;
+
 // ——————— FUNCTION TO CONTROL LEDS ———————
-void ControllLed(uint8_t mode_, uint8_t r, uint8_t g, uint8_t b, uint8_t interval) {
+void ControllLed(uint8_t mode_, uint8_t r, uint8_t g, uint8_t b, uint16_t interval) {
   switch (mode_) {
     case 1: { // solid
       fill_solid(leds, NUM_LEDS, CRGB(r, g, b));
       FastLED.show();
       break;
     }
-    case 2: { // blink
+    case 2: { // blink all
       uint32_t now = millis();
       if (now - gLastToggleMs >= interval) {
         gLastToggleMs = now;
@@ -55,7 +69,7 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
     Serial.println("Client connected");
   }
   void onDisconnect(NimBLEServer*, NimBLEConnInfo&, int) override {
-    Serial.println("Client disconnected");
+    Serial.println("Client disconnected, restarting advertising");
     NimBLEDevice::startAdvertising();
   }
 };
@@ -64,41 +78,40 @@ class MyServerCallbacks : public NimBLEServerCallbacks {
 class CharacteristicCallbacks : public NimBLECharacteristicCallbacks {
   void onWrite(NimBLECharacteristic* pChr, NimBLEConnInfo&) override {
     auto val = pChr->getValue();
-    // Expecting exactly 5 bytes: mode, R, G, B, interval
-    if (val.size() >= 5) {
-      uint8_t mode_    = val[0];
-      uint8_t r        = val[1];
-      uint8_t g        = val[2];
-      uint8_t b        = val[3];
-      uint8_t interval = val[4];
+    // Now expect exactly 6 bytes: mode, R, G, B, interval_hi, interval_lo
+    if (val.size() == 6) {
+      uint8_t  mode_    = val[0];
+      uint8_t  r        = val[1];
+      uint8_t  g        = val[2];
+      uint8_t  b        = val[3];
+      gInterval         = (uint16_t(val[4]) << 8) | uint16_t(val[5]);
 
-      // Apply the command
-      ControllLed(mode_, r, g, b, interval);
-
-      // And log it
+      // Apply and log
+      ControllLed(mode_, r, g, b, gInterval);
       Serial.printf(
-        "CMD ▶ mode=%u  R=%u G=%u B=%u  intvl=%ums\n",
-        mode_, r, g, b, interval
+        "CMD ▶ mode=%u  R=%u G=%u B=%u  interval=%ums\n",
+        mode_, r, g, b, gInterval
       );
     } else {
-      Serial.println("⚠️ Invalid payload length");
+      Serial.printf("⚠️ Invalid payload length (%u bytes)\n", val.size());
     }
   }
-
 };
-
-
 
 void setup() {
   Serial.begin(115200);
 
+  // — LED init —
   FastLED.addLeds<WS2811, DATA_PIN, GRB>(leds, NUM_LEDS);
   FastLED.setBrightness(BRIGHTNESS);
-  FastLED.clear(); FastLED.show();
+  FastLED.clear();
+  FastLED.show();
 
+  // — BLE init —
   NimBLEDevice::init(DEVICE_NAME);
   NimBLEDevice::setPower(ESP_PWR_LVL_P9);
 
+  // Create server + service + characteristic
   auto* pServer = NimBLEDevice::createServer();
   pServer->setCallbacks(new MyServerCallbacks());
 
@@ -108,18 +121,23 @@ void setup() {
   NimBLEUUID chrUUID((uint16_t)CHARACTERISTIC_UUID_16);
   pCharacteristic = pService->createCharacteristic(
     chrUUID,
-    NIMBLE_PROPERTY::WRITE    | NIMBLE_PROPERTY::WRITE_NR
+    NIMBLE_PROPERTY::WRITE    |
+    NIMBLE_PROPERTY::WRITE_NR
   );
   pCharacteristic->setCallbacks(new CharacteristicCallbacks());
 
   pService->start();
-  NimBLEAdvertising* pAdv = NimBLEDevice::getAdvertising();
+
+   auto* pAdv = NimBLEDevice::getAdvertising();
   pAdv->addServiceUUID(svcUUID);
+  //pAdv->setScanResponse(true);      // include the NAME in scan-response
+  pAdv->setName(DEVICE_NAME);       // advertise as “ESP32-LED-Controller”
   pAdv->start();
 
   Serial.println("BLE up and advertising (write-char 0x2B1E)");
 }
 
 void loop() {
+  // Nothing to do here, all handled in onWrite callback
   delay(100);
 }

@@ -14,6 +14,7 @@ class transmeterLogic extends GetxController{
 
 
 
+
   Future<void> showDoneDialog(double width, double height, context) async {
     connectionControll.RX_found == false ? connectionControll.startScan() : ();
     return showDialog<void>(
@@ -22,8 +23,10 @@ class transmeterLogic extends GetxController{
       builder: (BuildContext context) {
         return AlertDialog(
           title: Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              const Text('Connect with LIFI'),
+              const Text('Connect with LIFI',style: TextStyle(fontSize: 20.0),),
               IconButton(
                   onPressed: () {
                     connectionControll.startScan();

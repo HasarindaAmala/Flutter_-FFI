@@ -19,3 +19,6 @@ functions:
     - "detect_led_on"
     - "process_frame"
     - "process_frame_color"
+    - "yuvpixel_to_hsv_c"
+    - "detect_frame_color_precise"
+    - "classify_hsv_color"

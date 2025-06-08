@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:lifi_reciever/transmeter/transmeterScreen.dart';
 import '../Detection/detection.dart';
 import '../Detection/detectionTest.dart';
+import '../Detection/detection_page.dart';
+import '../controllers/connectionController.dart';
 import '../reciever/recieverScreen.dart';
+import 'package:get/get.dart';
 
 class homeScreen extends StatefulWidget {
   const homeScreen({super.key});
@@ -13,6 +16,7 @@ class homeScreen extends StatefulWidget {
 }
 
 class _homeScreenState extends State<homeScreen> {
+  final connectionControll = Get.put(connectionController());
 
   Future<bool?> _showExitConfirmation() async {
     return await showDialog<bool>(
@@ -32,6 +36,12 @@ class _homeScreenState extends State<homeScreen> {
         ],
       ),
     );
+  }
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    connectionControll.requestBluetoothPermissions();
   }
 
   @override

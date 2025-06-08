@@ -275,6 +275,123 @@ class NativeLibrary {
               ffi.Pointer<ffi.Double>,
             )
           >();
+
+  void yuvpixel_to_hsv_c(
+    int y_val,
+    int u_val,
+    int v_val,
+    ffi.Pointer<ffi.Double> out_hue,
+    ffi.Pointer<ffi.Double> out_sat,
+    ffi.Pointer<ffi.Double> out_val,
+  ) {
+    return _yuvpixel_to_hsv_c(y_val, u_val, v_val, out_hue, out_sat, out_val);
+  }
+
+  late final _yuvpixel_to_hsv_cPtr = _lookup<
+    ffi.NativeFunction<
+      ffi.Void Function(
+        ffi.Uint8,
+        ffi.Uint8,
+        ffi.Uint8,
+        ffi.Pointer<ffi.Double>,
+        ffi.Pointer<ffi.Double>,
+        ffi.Pointer<ffi.Double>,
+      )
+    >
+  >('yuvpixel_to_hsv_c');
+  late final _yuvpixel_to_hsv_c =
+      _yuvpixel_to_hsv_cPtr
+          .asFunction<
+            void Function(
+              int,
+              int,
+              int,
+              ffi.Pointer<ffi.Double>,
+              ffi.Pointer<ffi.Double>,
+              ffi.Pointer<ffi.Double>,
+            )
+          >();
+
+  void detect_frame_color_precise(
+    ffi.Pointer<ffi.Uint8> y_plane,
+    ffi.Pointer<ffi.Uint8> u_plane,
+    ffi.Pointer<ffi.Uint8> v_plane,
+    int width,
+    int height,
+    int y_row_stride,
+    int uv_row_stride,
+    int uv_pixel_stride,
+    int x0,
+    int y0,
+    int w,
+    int h,
+    ffi.Pointer<ffi.Double> out_color_values,
+  ) {
+    return _detect_frame_color_precise(
+      y_plane,
+      u_plane,
+      v_plane,
+      width,
+      height,
+      y_row_stride,
+      uv_row_stride,
+      uv_pixel_stride,
+      x0,
+      y0,
+      w,
+      h,
+      out_color_values,
+    );
+  }
+
+  late final _detect_frame_color_precisePtr = _lookup<
+    ffi.NativeFunction<
+      ffi.Void Function(
+        ffi.Pointer<ffi.Uint8>,
+        ffi.Pointer<ffi.Uint8>,
+        ffi.Pointer<ffi.Uint8>,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Int32,
+        ffi.Pointer<ffi.Double>,
+      )
+    >
+  >('detect_frame_color_precise');
+  late final _detect_frame_color_precise =
+      _detect_frame_color_precisePtr
+          .asFunction<
+            void Function(
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Uint8>,
+              ffi.Pointer<ffi.Uint8>,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              int,
+              ffi.Pointer<ffi.Double>,
+            )
+          >();
+
+  int classify_hsv_color(double hue, double sat, double val) {
+    return _classify_hsv_color(hue, sat, val);
+  }
+
+  late final _classify_hsv_colorPtr = _lookup<
+    ffi.NativeFunction<ffi.Int Function(ffi.Double, ffi.Double, ffi.Double)>
+  >('classify_hsv_color');
+  late final _classify_hsv_color =
+      _classify_hsv_colorPtr.asFunction<int Function(double, double, double)>();
 }
 
 const int _VCRT_COMPILER_PREPROCESSOR = 1;

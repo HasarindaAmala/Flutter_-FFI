@@ -3,6 +3,8 @@ import 'package:lifi_reciever/Detection/detection_page.dart'; // Manual LED Dete
 import 'package:lifi_reciever/Detection/auto_detection_page.dart'; // Automatic LED Detection page
 import 'package:camera/camera.dart';
 
+import '../Detection/detection.dart';
+
 class ReceiverScreen extends StatefulWidget {
   const ReceiverScreen({super.key});
 
@@ -68,7 +70,7 @@ class _ReceiverScreenState extends State<ReceiverScreen> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => DetectionPage(),
+                          builder: (context) => DetectionScreen(),
                         ),
                       );
                     },
