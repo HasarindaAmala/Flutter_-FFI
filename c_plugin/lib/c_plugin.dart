@@ -31,19 +31,6 @@ int sum(int a, int b) => _bindings.sum(a, b);
 
 /// Calls the native `const char* get_opencv_version()` function
 /// and converts the returned C string to a Dart `String`.
-String getOpenCvVersion() {
-  // 1. Get it as a Pointer<Char>
-  final Pointer<ffi.Char> charPtr = _bindings.get_opencv_version();
-  if (charPtr == nullptr) {
-    throw StateError('Failed to retrieve OpenCV version');
-  }
-
-  // 2. Cast it to Pointer<Utf8>
-  final Pointer<Utf8> utf8Ptr = charPtr.cast<Utf8>();
-
-  // 3. Convert to Dart string
-  return utf8Ptr.toDartString();
-}
 
 List<Rect> findBrightRegions(
     Uint8List nv21,

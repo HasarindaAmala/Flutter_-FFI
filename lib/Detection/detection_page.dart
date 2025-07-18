@@ -7,6 +7,9 @@ import 'package:lifi_reciever/Detection/graphDraw.dart';
 
 
 List<String> word = [];
+List<bool> ledtest =[];
+ int? _lastFrame;
+List<int> intervals = [];
 /// A small data class to hold one frame’s detection results
 class DetectionResult {
   final List<double> stats;     // [Ycurr, Ymin, Ymax, hue, sat, colorVal, ledFlag?]
@@ -95,7 +98,8 @@ class _DetectionScreenState extends State<DetectionScreen> {
       cameras.first,
       ResolutionPreset.medium, // Changed from ultraHigh for speed
       enableAudio: false,
-      fps: 60,                 // Throttle to 30fps—60fps is overkill if we drop frames anyway
+      fps: 30,
+      imageFormatGroup: ImageFormatGroup.yuv420// Throttle to 30fps—60fps is overkill if we drop frames anyway
     );
 
     await _controller!.initialize();
@@ -124,15 +128,32 @@ class _DetectionScreenState extends State<DetectionScreen> {
     super.dispose();
   }
 
+  void driveDetection() {
+    print("start");
+    // Start detection
+    _toggleDetect();
+
+    // Stop after 5 seconds
+    Future.delayed(const Duration(seconds: 5), () {
+      if (_detecting) {
+        _toggleDetect();
+      }
+    });
+
+  }
+
   void _toggleDetect() {
     if (_detecting) {
       _controller!.stopImageStream();
       setState(() {
         _detecting = false;
         startingCount.clear();
+        print("ledtest results $ledtest ${ledtest.length}");
+
       });
 
     } else {
+      ledtest.clear();
       _controller!.startImageStream(_onFrame);
       setState(() {
         _detecting = true;
@@ -161,7 +182,24 @@ class _DetectionScreenState extends State<DetectionScreen> {
     return _ledColorNames[idx];
   }
 
+  // void _onFrame(CameraImage img) {
+  //   final now = DateTime.now().millisecondsSinceEpoch;
+  //   if (_lastFrame != null) {
+  //     final interval = now - _lastFrame!;
+  //     intervals.add(interval);
+  //     print("📸 Frame interval: $interval ms");  // <-- Add this line
+  //
+  //     if (intervals.length >= 100) {
+  //       final avg = intervals.reduce((a, b) => a + b) / intervals.length;
+  //       print("⚡ Average FPS over last 100 frames: ${(1000 / avg).toStringAsFixed(1)}");
+  //       intervals.clear();
+  //     }
+  //   }
+  //   _lastFrame = now;
+  // }
+
   void _onFrame(CameraImage img) {
+
     if (_boxOrigin == null || _previewSize == null) return;
     if (_processing) return; // aggressively drop frames if we're busy
     _processing = true;
@@ -182,6 +220,8 @@ class _DetectionScreenState extends State<DetectionScreen> {
       _lastBoxH = boxHeight;
     }
     final roi = _lastRoi!;
+
+
 
     // Call the native FFI function
     final stats = processFrameColor(
@@ -209,95 +249,98 @@ class _DetectionScreenState extends State<DetectionScreen> {
     maxVal         = stats[2];
     colorCode      = stats[5];
     _ledOn         = (stats[6] == 1.0);
+    //
+     ledtest.add(_ledOn);
     //_ledColorName = ledColorDetect(colorCode.toInt());
-    final idx = stats[5].toInt();               // your “colorVal” field
-    final name = ledColorDetect(idx);
-    print("colorVal idx=$idx → $name  (stats[6]=${stats[6]})");
-
-    if (_ledOn) {
-      _ledColorName = ledColorDetect(colorCode.toInt());
-
-      // Only count a new green when previous was not green
-      if (_ledColorName == "green" && !lastWasGreen) {
-        //print("green added");
-        startingCount.add(1);
-        transmittingStart = false;
-        lastWasGreen = true;
-      }else if(_ledColorName == "yellow" && !lastWasYellow){
-        flag = false;
-        print("bit start detected");
-
-        bitStarted = true;
-        lastWasYellow = true;
-
-      }else if (_ledColorName != "yellow") {
-        // As soon as it’s not “yellow” we allow next cycle to retrigger
-        lastWasYellow = false;
-      }
-    }
-    else{
-      print("off");
-      print("blink detected Black");
-      if(bitStarted == true){
-        flag = true;
-        _ledColorHistory.clear();
-      }
-      _ledColorName = "Black";
-
-      lastWasGreen = false;
-      lastWasYellow = false;// Reset when not green
-    }
-    _ledColorHistory.add(_ledColorName);
-    if (_ledHistory.length >= _kMaxHistory) {
-      _ledHistory.removeAt(0);
-    }
-    if (_ledColorHistory.length >= 80) {
-      _ledColorHistory.removeAt(0);
-    }
-    _ledHistory.add(_ledOn ? 1.0 : 0.0);
-
-    if(startingCount.length == 3){
-      print("start detecting...");
-      startingCount.clear();
-      transmittingStart = true;
-    }
-
-    if(bitStarted ==true && !_samplingBits && flag == true){
-
-      print("detection started..");
-      bitStarted = false;
-      _samplingBits = true;
-      _bitSamples.clear();
-      _bitIndex = 0;
-      _samplingTimer?.cancel();
-
-      // _samplingTimer = Timer.periodic(Duration(milliseconds: 200), (timer) {
-      //   sampleBit();
-      // });
-      // Start fixed-interval sampling after a short sync delay (~200ms)
-
-
-      Future.delayed(Duration(milliseconds: 200), () {
-        print(">>> Color immediately after yellow: $_ledColorName");
-        sampleBit();
-        _samplingTimer = Timer.periodic(Duration(milliseconds: 200), (timer) {
-          print("sample bit started ...>");
-          sampleBit();
-        });
-      });
-    }
-
-    // Now trigger a rebuild for anything that depends on this
-    setState(() {});
-    _valueController.add(
-      DetectionResult(
-        stats: stats,
-        ledColor: _ledColorName,
-        history: List<double>.from(_ledHistory),
-        isLedOn: _ledOn,
-      ),
-    );
-    _processing = false;
+    // final idx = stats[5].toInt();               // your “colorVal” field
+    // final name = ledColorDetect(idx);
+    // print("colorVal idx=$idx → $name  (stats[6]=${stats[6]})");
+    //
+    //
+    // if (_ledOn) {
+    //   _ledColorName = ledColorDetect(colorCode.toInt());
+    //
+    //   // Only count a new green when previous was not green
+    //   if (_ledColorName == "green" && !lastWasGreen) {
+    //     //print("green added");
+    //     startingCount.add(1);
+    //     transmittingStart = false;
+    //     lastWasGreen = true;
+    //   }else if(_ledColorName == "yellow" && !lastWasYellow){
+    //     flag = false;
+    //     print("bit start detected");
+    //
+    //     bitStarted = true;
+    //     lastWasYellow = true;
+    //
+    //   }else if (_ledColorName != "yellow") {
+    //     // As soon as it’s not “yellow” we allow next cycle to retrigger
+    //     lastWasYellow = false;
+    //   }
+    // }
+    // else{
+    //   print("off");
+    //   print("blink detected Black");
+    //   if(bitStarted == true){
+    //     flag = true;
+    //     _ledColorHistory.clear();
+    //   }
+    //   _ledColorName = "Black";
+    //
+    //   lastWasGreen = false;
+    //   lastWasYellow = false;// Reset when not green
+    // }
+    // _ledColorHistory.add(_ledColorName);
+    // if (_ledHistory.length >= _kMaxHistory) {
+    //   _ledHistory.removeAt(0);
+    // }
+    // if (_ledColorHistory.length >= 80) {
+    //   _ledColorHistory.removeAt(0);
+    // }
+    // _ledHistory.add(_ledOn ? 1.0 : 0.0);
+    //
+    // if(startingCount.length == 3){
+    //   print("start detecting...");
+    //   startingCount.clear();
+    //   transmittingStart = true;
+    // }
+    //
+    // if(bitStarted ==true && !_samplingBits && flag == true){
+    //
+    //   print("detection started..");
+    //   bitStarted = false;
+    //   _samplingBits = true;
+    //   _bitSamples.clear();
+    //   _bitIndex = 0;
+    //   _samplingTimer?.cancel();
+    //
+    //   // _samplingTimer = Timer.periodic(Duration(milliseconds: 200), (timer) {
+    //   //   sampleBit();
+    //   // });
+    //   // Start fixed-interval sampling after a short sync delay (~200ms)
+    //
+    //
+    //   Future.delayed(Duration(milliseconds: 120), () {
+    //     print(">>> Color immediately after yellow: $_ledColorName");
+    //     sampleBit();
+    //     _samplingTimer = Timer.periodic(Duration(milliseconds: 100), (timer) {
+    //       print("sample bit started ...>");
+    //       sampleBit();
+    //     });
+    //   });
+    // }
+    //
+    // // Now trigger a rebuild for anything that depends on this
+    // setState(() {});
+    // _valueController.add(
+    //   DetectionResult(
+    //     stats: stats,
+    //     ledColor: _ledColorName,
+    //     history: List<double>.from(_ledHistory),
+    //     isLedOn: _ledOn,
+    //   ),
+    // );
+     _processing = false;
   }
 
   List<int> encodeRedByNineDropLeading(List<String> input) {
@@ -514,9 +557,9 @@ class _DetectionScreenState extends State<DetectionScreen> {
                               });
                             },
                             isDetecting: _detecting,
-                            onToggleDetect: _toggleDetect,
                             arrivedByte: snapshot.data!,
                             transmittingStart: transmittingStart,
+                            driveDetection: driveDetection,
 
                           );
                         }
@@ -563,7 +606,7 @@ class ControlPanel extends StatelessWidget {
   final bool isDetecting;
   final ValueChanged<double> onWidthChange;
   final ValueChanged<double> onHeightChange;
-  final VoidCallback onToggleDetect;
+  final VoidCallback driveDetection;
   final List<int> arrivedByte;
   final bool transmittingStart;
 
@@ -574,7 +617,7 @@ class ControlPanel extends StatelessWidget {
     required this.onWidthChange,
     required this.onHeightChange,
     required this.isDetecting,
-    required this.onToggleDetect,
+    required this.driveDetection,
     required this.arrivedByte,
     required this.transmittingStart,
   });
@@ -629,16 +672,35 @@ class ControlPanel extends StatelessWidget {
             ),
             const SizedBox(height: 6),
             ElevatedButton(
-              onPressed: onToggleDetect,
+              onPressed: driveDetection,
               child: Text(isDetecting ? "Stop" : "Detect"),
             ),
             const SizedBox(height: 8),
-            Text("Incoming: ${ByteToString(arrivedByte)}")
+            SizedBox(
+              height: 150,
+              child: SingleChildScrollView(
+                child: Text(
+                  formatList(ledtest),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text("length: ${ledtest.length}"),
           ],
         ),
       ),
     );
   }
+}
+String formatList(List<bool> list, {int wrap = 10}) {
+  final buffer = StringBuffer();
+  for (int i = 0; i < list.length; i++) {
+    buffer.write(list[i] ? '1' : '0');
+    if ((i + 1) % wrap == 0) buffer.write('\n');
+    else buffer.write(', ');
+  }
+  return buffer.toString();
 }
 
 class DetectionInfo extends StatelessWidget {

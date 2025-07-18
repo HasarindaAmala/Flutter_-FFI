@@ -11,11 +11,13 @@ using namespace cv;
 extern "C" {
 
 double color_hsv[3];
-// Returns a pointer to a NUL-terminated const char* of the form "4.5.2"
-const char* get_opencv_version() {
-    return CV_VERSION;
-}
+constexpr int MAX_H = 256;
+constexpr int MAX_W = 256;
 
+static uint8_t frame_matrix[3][MAX_H][MAX_W];
+static int frame_index = 0;
+//std::vector<std::vector<uint8_t>> brightness_matrix(h, std::vector<uint8_t>(w));
+// Returns a pointer to a NUL-terminated const char* of the form "4.5.2"
 void detect_bright_regions(
         const uint8_t* nv21_data,
         int width,
@@ -193,15 +195,56 @@ void process_frame_color(
     static bool   ledOn   = false;
     const double  HYSTFRAC = 0.1;  // hysteresis as fraction of span (10%)
 
-    // 1) Compute average Y over the ROI
-    uint64_t sumY = 0;
+    // Clip to bounds
+    if (h > MAX_H || w > MAX_W) return; // Safety check
+
+// Get current frame slot (rotate 0→1→2→0…)
+    uint8_t (*curr_matrix)[MAX_W] = frame_matrix[frame_index];
+
+// Fill brightness matrix for current frame
     for (int r = 0; r < h; ++r) {
         const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
         for (int c = 0; c < w; ++c) {
-            sumY += yp[c];
+            curr_matrix[r][c] = yp[c];
         }
     }
-    double Y = double(sumY) / (w * h);
+// Next frame will write to next slot
+    frame_index = (frame_index + 1) % 3;
+    uint8_t (*f1)[MAX_W] = frame_matrix[(frame_index + 2) % 3];
+    uint8_t (*f2)[MAX_W] = frame_matrix[(frame_index + 1) % 3];
+    uint8_t (*f3)[MAX_W] = frame_matrix[(frame_index + 0) % 3];  // newest
+
+    const int pixel_change_threshold = 25; // tune this for your lighting + distance
+
+    uint64_t sumY = 0;
+    int changedPixelCount = 0;
+
+    for (int r = 0; r < h; ++r) {
+        for (int c = 0; c < w; ++c) {
+            int v1 = f1[r][c];
+            int v2 = f2[r][c];
+            int v3 = f3[r][c];
+
+            int minV = std::min({v1, v2, v3});
+            int maxV = std::max({v1, v2, v3});
+            int diff = maxV - minV;
+
+            if (diff > pixel_change_threshold) {
+                sumY += v3;  // use latest brightness
+                changedPixelCount++;
+            }
+        }
+    }
+    double Y = (changedPixelCount > 0) ? double(sumY) / changedPixelCount : 0.0;
+
+//    uint64_t sumY = 0;     this function for compute average brightness over ROI
+//    for (int r = 0; r < h; ++r) {
+//        const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
+//        for (int c = 0; c < w; ++c) {
+//            sumY += yp[c];
+//        }
+//    }
+//    double Y = double(sumY) / (w * h);
 
     // 2) Push into circular history buffer
     history[idx] = Y;

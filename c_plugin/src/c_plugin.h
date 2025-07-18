@@ -30,6 +30,8 @@ FFI_PLUGIN_EXPORT int sum_long_running(int a, int b);
 /// Returns the OpenCV compile-time version string, e.g. "4.5.2"
 FFI_PLUGIN_EXPORT const char* get_opencv_version();
 
+int count_camera_frames();
+
 void detect_bright_regions(
         const uint8_t* nv21_data,
         int width,

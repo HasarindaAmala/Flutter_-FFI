@@ -5,7 +5,7 @@
 // ——————— LED STRIP CONFIG ———————
 #define NUM_LEDS    32
 #define DATA_PIN    2      // WS2811 data pin
-#define BRIGHTNESS  250
+#define BRIGHTNESS  100
 CRGB leds[NUM_LEDS];
 
 // ——————— BLE CONFIG ———————
@@ -18,7 +18,7 @@ bool     gBlinkState   = false;
 uint32_t gLastToggleMs = 0;
 
 // Blink interval is now 16-bit:
-uint16_t gInterval     = 500;    // default 500 ms
+uint16_t gInterval     = 60;    // default 500 ms
 
 // BLE characteristic pointer
 NimBLECharacteristic* pCharacteristic = nullptr;
@@ -31,8 +31,7 @@ uint8_t  gB        = 0;    // blue value
 uint16_t interval = 0.0;
 uint8_t  idx        = 0;// blink interval in ms
 
-bool     gBlinkState   = false;
-uint32_t gLastToggleMs = 0;
+
 
 // ——————— FUNCTION TO CONTROL LEDS ———————
 void ControllLed(uint8_t mode_, uint8_t r, uint8_t g, uint8_t b, uint16_t interval) {

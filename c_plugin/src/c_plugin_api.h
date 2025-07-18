@@ -10,6 +10,7 @@ extern "C" {
 /// very short-lived
 int   sum(int a, int b);
 
+int count_camera_frames();
 /// longer-lived
 int   sum_long_running(int a, int b);
 

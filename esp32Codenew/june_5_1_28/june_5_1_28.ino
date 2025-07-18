@@ -4,7 +4,7 @@
 
 #define NUM_LEDS    32
 #define DATA_PIN    2
-#define BRIGHTNESS  5
+#define BRIGHTNESS  250
 
 CRGB leds[NUM_LEDS];
 
@@ -21,7 +21,7 @@ uint8_t  gMode     = 0;
 uint8_t  gR        = 0;
 uint8_t  gG        = 0;
 uint8_t  gB        = 0;
-uint16_t gInterval = 500;
+uint16_t gInterval = 100;
 
 enum BlinkState {
   BS_IDLE,
@@ -50,9 +50,9 @@ static void stripOff() {
 static void blinkColor200ms(const CRGB &color) {
   fill_solid(leds, NUM_LEDS, color);
   FastLED.show();
-  delay(200);
+  delay(gInterval);
   stripOff();
-  delay(200);
+  delay(gInterval);
 }
 
 void ControllLed(uint8_t mode_, uint8_t r, uint8_t g, uint8_t b, uint16_t interval) {
@@ -99,7 +99,7 @@ static void processTextState() {
     case BS_STARTUP_ON:
       fill_solid(leds, NUM_LEDS, CRGB::Green);
       FastLED.show();
-      if (now - phaseStart >= 200) {
+      if (now - phaseStart >= gInterval) {
         phaseStart = now;
         textState = BS_STARTUP_OFF;
       }
@@ -107,7 +107,7 @@ static void processTextState() {
 
     case BS_STARTUP_OFF:
       stripOff();
-      if (now - phaseStart >= 200) {
+      if (now - phaseStart >= gInterval) {
         phaseStart = now;
         startupStep++;
         if (startupStep < 6) {
@@ -122,7 +122,7 @@ static void processTextState() {
     case BS_CHAR_ON:
       fill_solid(leds, NUM_LEDS, CRGB::Yellow);
       FastLED.show();
-      if (now - phaseStart >= 200) {
+      if (now - phaseStart >= gInterval) {
         phaseStart = now;
         textState = BS_CHAR_OFF;
       }
@@ -130,7 +130,7 @@ static void processTextState() {
 
     case BS_CHAR_OFF:
       stripOff();
-      if (now - phaseStart >= 200) {
+      if (now - phaseStart >= gInterval) {
         phaseStart = now;
         bitIndex = 0;
         prevBitValue = -1;
@@ -154,7 +154,7 @@ static void processTextState() {
 
         prevBitValue = bitIsOne ? 1 : 0;
 
-        if (now - phaseStart >= 200) {
+        if (now - phaseStart >= gInterval) {
           phaseStart = now;
           textState = BS_BIT_OFF;
         }
