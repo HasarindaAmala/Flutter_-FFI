@@ -4,7 +4,7 @@
 
 #define NUM_LEDS    32
 #define DATA_PIN    2
-#define BRIGHTNESS  250
+#define BRIGHTNESS  100
 
 CRGB leds[NUM_LEDS];
 
@@ -21,7 +21,7 @@ uint8_t  gMode     = 0;
 uint8_t  gR        = 0;
 uint8_t  gG        = 0;
 uint8_t  gB        = 0;
-uint16_t gInterval = 100;
+uint16_t gInterval = 60;
 
 enum BlinkState {
   BS_IDLE,

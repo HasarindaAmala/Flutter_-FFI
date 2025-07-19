@@ -4,10 +4,12 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'dart:math';
 import 'package:lifi_reciever/Detection/graphDraw.dart';
+import 'package:flutter/foundation.dart';
 
 
 List<String> word = [];
 List<bool> ledtest =[];
+List<double> brightnessList =[];
  int? _lastFrame;
 List<int> intervals = [];
 /// A small data class to hold one frame’s detection results
@@ -96,7 +98,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     final cameras = await availableCameras();
     _controller = CameraController(
       cameras.first,
-      ResolutionPreset.medium, // Changed from ultraHigh for speed
+      ResolutionPreset.low, // Changed from ultraHigh for speed
       enableAudio: false,
       fps: 30,
       imageFormatGroup: ImageFormatGroup.yuv420// Throttle to 30fps—60fps is overkill if we drop frames anyway
@@ -134,7 +136,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     _toggleDetect();
 
     // Stop after 5 seconds
-    Future.delayed(const Duration(seconds: 5), () {
+    Future.delayed(const Duration(seconds: 2), () {
       if (_detecting) {
         _toggleDetect();
       }
@@ -251,6 +253,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     _ledOn         = (stats[6] == 1.0);
     //
      ledtest.add(_ledOn);
+    brightnessList.add(_avgBrightness);
     //_ledColorName = ledColorDetect(colorCode.toInt());
     // final idx = stats[5].toInt();               // your “colorVal” field
     // final name = ledColorDetect(idx);
@@ -687,6 +690,17 @@ class ControlPanel extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text("length: ${ledtest.length}"),
+            const SizedBox(height: 10,),
+            SizedBox(
+              height: 150,
+              child: SingleChildScrollView(
+                child: Text(
+                  formatBrightnessList(brightnessList),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              ),
+            ),
+            Text("br: ${ledtest.length}"),
           ],
         ),
       ),
@@ -697,6 +711,15 @@ String formatList(List<bool> list, {int wrap = 10}) {
   final buffer = StringBuffer();
   for (int i = 0; i < list.length; i++) {
     buffer.write(list[i] ? '1' : '0');
+    if ((i + 1) % wrap == 0) buffer.write('\n');
+    else buffer.write(', ');
+  }
+  return buffer.toString();
+}
+String formatBrightnessList(List<double> list, {int wrap = 10}) {
+  final buffer = StringBuffer();
+  for (int i = 0; i < list.length; i++) {
+    buffer.write(list[i]);
     if ((i + 1) % wrap == 0) buffer.write('\n');
     else buffer.write(', ');
   }
@@ -762,4 +785,6 @@ class DetectionInfo extends StatelessWidget {
     );
   }
 }
+
+
 
