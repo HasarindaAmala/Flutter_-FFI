@@ -575,7 +575,7 @@ void process_frame_color(
     static bool full = false;
     static bool ledOn = false;
     const double HYSTFRAC = 0.1;
-    const int pixel_change_threshold = 20;
+    const int pixel_change_threshold = 30;
     double Y = 0.0;
     static int frame_count= 0;
 

@@ -37,10 +37,22 @@ class DetectionScreen extends StatefulWidget {
 }
 
 class _DetectionScreenState extends State<DetectionScreen> {
+  static const warmUpDuration        = Duration(milliseconds: 200);
+  static const measurementDuration   = Duration(seconds: 2);
+  static const fpsLogInterval        = Duration(milliseconds: 500);
+
+  DateTime?     _warmUpStart;
+  DateTime?     _measurementStart;
+  bool          _processing = false;
+  Timer?        _fpsTimer;
+  Timer?        _measurementTimer;
+  int           _fpsFrameCount = 0;
+  DateTime      _fpsLastTime  = DateTime.now();
+
   CameraController? _controller;
   bool _cameraInitialized = false;
-  DateTime _fpsLastTime = DateTime.now();
-  int      _fpsFrameCount = 0;
+  // DateTime _fpsLastTime = DateTime.now();
+  // int      _fpsFrameCount = 0;
 
   // ROI state:
   Offset? _boxOrigin;
@@ -54,7 +66,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
   // Detection state:
   bool _detecting = false;
-  bool _processing = false;
+  //bool _processing = false;
 
   // Latest stats & history
   static const int _kMaxHistory = 100;
@@ -89,6 +101,8 @@ class _DetectionScreenState extends State<DetectionScreen> {
   // Stream controller for passing results to the UI
   late final StreamController<DetectionResult> _valueController;
   late final StreamController<List<int>> byteController;
+
+  //Timer? _fpsTimer;
 
   @override
   void initState() {
@@ -131,45 +145,62 @@ class _DetectionScreenState extends State<DetectionScreen> {
     }
     _controller?.dispose();
     _valueController.close();
+    _fpsTimer?.cancel();
+    _measurementTimer?.cancel();
     super.dispose();
   }
 
   void driveDetection() {
     print("start");
-    // Start detection
-    _toggleDetect();
+    _warmUpStart        = null;
+    _measurementStart   = null;
+    _fpsFrameCount      = 0;
+    _fpsTimer?.cancel();
+    _measurementTimer?.cancel();
 
-    // Stop after 5 seconds
-    Future.delayed(const Duration(seconds: 2), () {
-      if (_detecting) {
-        _toggleDetect();
-      }
-    });
+    _toggleDetect();
 
   }
 
   void _toggleDetect() {
-    if (_detecting) {
-      _controller!.stopImageStream();
-      setState(() {
-        _detecting = false;
-        counter = 1;
-        startingCount.clear();
-
-        print("ledtest results $ledtest ${ledtest.length}");
-
-      });
-
-    } else {
+    if (_processing == false && _controller != null && !_detecting) {
+      counter = 1;
       minMax.clear();
       ledtest.clear();
       brightnessList.clear();
       _controller!.startImageStream(_onFrame);
+      setState(() => _detecting = true);
+    } else if (_controller != null && _detecting) {
+      _controller!.stopImageStream();
+
       setState(() {
-        _detecting = true;
         startingCount.clear();
+        _detecting = false;
       });
-    }
+
+      }
+
+    // if (_detecting) {
+    //   _controller!.stopImageStream();
+    //   setState(() {
+    //     _detecting = false;
+    //     counter = 1;
+    //     startingCount.clear();
+    //
+    //     print("ledtest results $ledtest ${ledtest.length}");
+    //
+    //   });
+    //
+    // } else {
+    //   minMax.clear();
+    //   ledtest.clear();
+    //   brightnessList.clear();
+    //   _controller!.startImageStream(_onFrame);
+    //   setState(() {
+    //     _detecting = true;
+    //     startingCount.clear();
+    //   });
+    // }
   }
 
   // Convert an index to a color name
@@ -283,22 +314,54 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
 
   }
+  void _startFpsTimer() {
+    _fpsLastTime = DateTime.now();
+    _fpsTimer = Timer.periodic(fpsLogInterval, (timer) {
+      final now     = DateTime.now();
+      final elapsed = now.difference(_fpsLastTime).inMilliseconds;
+      final fps     = elapsed > 0
+          ? _fpsFrameCount * 1000 / elapsed
+          : 0.0;
+      print("FPS: ${fps.toStringAsFixed(1)}");
+
+      // reset counters
+      _fpsFrameCount = 0;
+      _fpsLastTime   = now;
+    });
+  }
+
+  void _startMeasurementTimer() {
+    _measurementTimer = Timer(measurementDuration, () {
+      // stop FPS logging and image stream
+      _fpsTimer?.cancel();
+      _toggleDetect();
+      print("Measurement complete.");
+    });
+  }
 
   void _onFrame(CameraImage img) {
-    if (_fpsFrameCount == 0) {
-      // first frame: reset our clock here
-      _fpsLastTime   = DateTime.now();
-    }
-    _fpsFrameCount++;
+
     final now = DateTime.now();
-    final elapsed = now.difference(_fpsLastTime);
-    if (elapsed.inMilliseconds >= 1000) {
-      final fps = (_fpsFrameCount / elapsed.inMilliseconds) * 1000;
-      print("FPS: ${fps.toStringAsFixed(1)}");
-      _fpsFrameCount = 0;
-      _fpsLastTime  = now;
+
+    if (_warmUpStart == null) {
+      _warmUpStart = now;
+      return;  // skip processing/logging until warm-up timer is running
     }
+    if (now.difference(_warmUpStart!) < warmUpDuration) {
+      return;
+    }
+
     if (_boxOrigin == null || _previewSize == null) return;
+
+    // ─── 2) Measurement start ──────────────────────────────
+    if (_measurementStart == null) {
+      _measurementStart = now;
+      _startFpsTimer();                   // every 500 ms
+      _startMeasurementTimer();           // single 2 s timer
+    }
+
+
+    _fpsFrameCount++;
     if(_processing == true){
      print("dropped");
     }
