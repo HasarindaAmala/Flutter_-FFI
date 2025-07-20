@@ -8,10 +8,12 @@ import 'package:flutter/foundation.dart';
 
 
 List<String> word = [];
-List<bool> ledtest =[];
+List<double> ledtest =[];
+List<List<double>> minMax =[];
 List<double> brightnessList =[];
  int? _lastFrame;
 List<int> intervals = [];
+int counter = 1;
 /// A small data class to hold one frame’s detection results
 class DetectionResult {
   final List<double> stats;     // [Ycurr, Ymin, Ymax, hue, sat, colorVal, ledFlag?]
@@ -60,7 +62,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
   String _ledColorName = "unknown";
   String _currentLedColorName = "unknown";
   double colorCode = 0.0;
-  bool _ledOn = false;
+  double _ledOn = 0.0;
   final List<int> startingCount = [];
   bool lastWasGreen = false;
   bool lastWasYellow = false;
@@ -149,13 +151,17 @@ class _DetectionScreenState extends State<DetectionScreen> {
       _controller!.stopImageStream();
       setState(() {
         _detecting = false;
+        counter = 0;
         startingCount.clear();
+
         print("ledtest results $ledtest ${ledtest.length}");
 
       });
 
     } else {
+      minMax.clear();
       ledtest.clear();
+      brightnessList.clear();
       _controller!.startImageStream(_onFrame);
       setState(() {
         _detecting = true;
@@ -200,10 +206,89 @@ class _DetectionScreenState extends State<DetectionScreen> {
   //   _lastFrame = now;
   // }
 
+  List<bool> decodeLedHistory(double encoded) {
+    int val = encoded.toInt(); // convert from double
+    return List<bool>.generate(3, (i) => ((val >> (2 - i)) & 1) == 1);
+  }
+  void updateLedTest(List<bool> decodedHistory, int frameIndex, List<bool> ledtest) {
+    // Order from oldest to newest using circular buffer logic
+    for (int i = 0; i < 3; i++) {
+      int actualIndex = (frameIndex + 1 + i) % 3;
+      // This corresponds to the order: oldest, mid, newest
+      bool state = decodedHistory[actualIndex];
+
+      if (ledtest.length <= i + frameIndex) {
+        ledtest.add(state); // Not enough data yet
+      } else {
+        ledtest[ledtest.length - 3 + i] = state;
+      }
+    }
+  }
+
+  void ledMainArrayUpdate (List<bool> history, int frame,){
+    void ensureSize(int index) {
+      // Extend the mainArray if needed
+      while (ledtest.length <= index) {
+        ledtest.add(0.0);
+      }
+    }
+
+
+
+     if(frame<4){
+
+       for(int i = 0; i< 3; i++){
+         ensureSize(i);
+         ledtest[i] = history[i] ? 1.0:0.0;
+       }
+
+     }else{
+       int a = frame%3;
+       int b = (frame-1)%3;
+       int c = (frame -2)%3;
+
+       ensureSize(frame);
+       ensureSize(frame - 1);
+       ensureSize(frame - 2);
+
+
+       if(a == 0){
+         ledtest[frame] =  history[2] ? 1.0:0.0 ;
+       }else if(a == 1){
+         ledtest[frame] =  history[0] ? 1.0:0.0 ;
+       }else if(a == 2){
+         ledtest[frame] =  history[1] ? 1.0:0.0 ;
+       }
+
+       if(b == 0){
+         ledtest[frame-1] =  history[2] ? 1.0:0.0 ;
+       }else if(b == 1){
+         ledtest[frame-1] =  history[0] ? 1.0:0.0 ;
+       }else if(b == 2){
+         ledtest[frame-1] =  history[1] ? 1.0:0.0 ;
+       }
+
+       if(c == 0){
+         ledtest[frame-2] =  history[2] ? 1.0:0.0 ;
+       }else if(c == 1){
+         ledtest[frame-2] =  history[0] ? 1.0:0.0 ;
+       }else if(c == 2){
+         ledtest[frame-2] =  history[1] ? 1.0:0.0 ;
+       }
+
+
+     }
+
+
+  }
+
   void _onFrame(CameraImage img) {
 
     if (_boxOrigin == null || _previewSize == null) return;
-    if (_processing) return; // aggressively drop frames if we're busy
+    if(_processing == true){
+print("dropped");
+    }
+    if (_processing) return;
     _processing = true;
 
     // Recompute ROI only if ROI changed
@@ -250,9 +335,13 @@ class _DetectionScreenState extends State<DetectionScreen> {
     minVal         = stats[1];
     maxVal         = stats[2];
     colorCode      = stats[5];
-    _ledOn         = (stats[6] == 1.0);
+    _ledOn         = stats[6];
     //
-     ledtest.add(_ledOn);
+
+    minMax.add([minVal,maxVal]);
+    List<bool> ledHistory = decodeLedHistory(_ledOn);
+    ledMainArrayUpdate(ledHistory,counter);
+    //ledtest.add(_ledOn);
     brightnessList.add(_avgBrightness);
     //_ledColorName = ledColorDetect(colorCode.toInt());
     // final idx = stats[5].toInt();               // your “colorVal” field
@@ -343,6 +432,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     //     isLedOn: _ledOn,
     //   ),
     // );
+    counter = counter +1;
      _processing = false;
   }
 
@@ -700,23 +790,43 @@ class ControlPanel extends StatelessWidget {
                 ),
               ),
             ),
-            Text("br: ${ledtest.length}"),
+            Text("brightness: ${brightnessList.length}"),
+            const SizedBox(height: 10,),
+            SizedBox(
+              height: 150,
+              child: SingleChildScrollView(
+                child: Text(
+                  formatminMaxList(minMax),
+                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+                ),
+              ),
+            ),
+            Text("minMax: ${minMax.length}"),
           ],
         ),
       ),
     );
   }
 }
-String formatList(List<bool> list, {int wrap = 10}) {
+String formatList(List<double> list, {int wrap = 10}) {
   final buffer = StringBuffer();
   for (int i = 0; i < list.length; i++) {
-    buffer.write(list[i] ? '1' : '0');
+    buffer.write(list[i]);
     if ((i + 1) % wrap == 0) buffer.write('\n');
     else buffer.write(', ');
   }
   return buffer.toString();
 }
 String formatBrightnessList(List<double> list, {int wrap = 10}) {
+  final buffer = StringBuffer();
+  for (int i = 0; i < list.length; i++) {
+    buffer.write(list[i]);
+    if ((i + 1) % wrap == 0) buffer.write('\n');
+    else buffer.write(', ');
+  }
+  return buffer.toString();
+}
+String formatminMaxList(List<List<double>> list, {int wrap = 10}) {
   final buffer = StringBuffer();
   for (int i = 0; i < list.length; i++) {
     buffer.write(list[i]);

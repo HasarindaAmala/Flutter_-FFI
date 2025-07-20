@@ -4,7 +4,7 @@
 
 #define NUM_LEDS    32
 #define DATA_PIN    2
-#define BRIGHTNESS  100
+#define BRIGHTNESS  200
 
 CRGB leds[NUM_LEDS];
 
@@ -54,6 +54,8 @@ static void blinkColor200ms(const CRGB &color) {
   stripOff();
   delay(gInterval);
 }
+const uint8_t blinkIndices[] = {11, 12,19, 20};
+const uint8_t numToBlink = sizeof(blinkIndices) / sizeof(blinkIndices[0]);
 
 void ControllLed(uint8_t mode_, uint8_t r, uint8_t g, uint8_t b, uint16_t interval) {
   switch (mode_) {
@@ -66,7 +68,12 @@ void ControllLed(uint8_t mode_, uint8_t r, uint8_t g, uint8_t b, uint16_t interv
       if (now - lastToggleMs >= interval) {
         lastToggleMs = now;
         blinkState = !blinkState;
-        fill_solid(leds, NUM_LEDS, blinkState ? CRGB(r, g, b) : CRGB::Black);
+        fill_solid(leds, NUM_LEDS, CRGB::Black);
+       if (blinkState) {
+    for (int i = 0; i < numToBlink; i++) {
+      leds[blinkIndices[i]] = CRGB(r, g, b);  // Use your desired color
+    }
+  }
         FastLED.show();
       }
       break;

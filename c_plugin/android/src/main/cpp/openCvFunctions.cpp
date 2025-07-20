@@ -18,6 +18,11 @@
 using namespace cv;
 constexpr int MAX_H = 256;
 constexpr int MAX_W = 256;
+
+inline uint8_t median3(uint8_t a, uint8_t b, uint8_t c) {
+    return a > b ? (b > c ? b : (a > c ? c : a))
+                 : (a > c ? a : (b > c ? b : c));
+}
 std::vector<std::vector<uint8_t>> downsampleMatrix10x10(
         const uint8_t matrix[MAX_H][MAX_W],
         int height,
@@ -59,7 +64,7 @@ double color_hsv[3];
 
 //static uint8_t frame_matrix[3][MAX_H][MAX_W];
 static std::vector<std::vector<uint8_t>> frame_matrix[3];
-
+bool threeFramesCaptured = false;
 static int frame_index = 0;
 //std::vector<std::vector<uint8_t>> brightness_matrix(h, std::vector<uint8_t>(w));
 // Returns a pointer to a NUL-terminated const char* of the form "4.5.2"
@@ -562,13 +567,16 @@ void process_frame_color(
         int32_t h,
         double* out_values  // [Y, minY, maxY, hue, sat, colorCode, ledOn]
 ) {
-    constexpr int WINDOW = 30;
+    constexpr int WINDOW = 3;
     static double history[WINDOW];
+    static double ledOnOffHistory[WINDOW] = {1,1,1};
     static int idx = 0;
+    int encoded = 0;
     static bool full = false;
     static bool ledOn = false;
     const double HYSTFRAC = 0.1;
-    const int pixel_change_threshold = 25;
+    const int pixel_change_threshold = 20;
+    double Y = 0.0;
 
     // Frame buffer history for downsampled matrices
     static std::vector<std::vector<uint8_t>> frame_matrix[3];
@@ -584,20 +592,33 @@ void process_frame_color(
     }
 
     // Step 2: Downsample and store current matrix
-    frame_matrix[frame_index] = downsampleMatrix10x10(temp_matrix, h, w);
+    auto raw = downsampleMatrix10x10(temp_matrix, h, w);
+    frame_matrix[frame_index].resize(raw.size(), vector<uint8_t>(raw[0].size()));
+    for (int r = 0; r < (int)raw.size(); ++r) {
+        for (int c = 0; c < (int)raw[0].size(); ++c) {
+            // gather neighbors (with boundary checks)
+            uint8_t p0 = raw[r][c];
+            uint8_t p1 = (r>0   ? raw[r-1][c] : p0);
+            uint8_t p2 = (r+1<raw.size()? raw[r+1][c] : p0);
+            frame_matrix[frame_index][r][c] = median3(p0,p1,p2);
+        }
+    }
+    //frame_matrix[frame_index] = downsampleMatrix10x10(temp_matrix, h, w);
     auto& f3 = frame_matrix[frame_index];
     auto& f2 = frame_matrix[(frame_index + 2) % 3];
     auto& f1 = frame_matrix[(frame_index + 1) % 3];
 
-    frame_index = (frame_index + 1) % 3;
+
 
     // Step 3: Compare frames to detect changed pixels
     uint64_t sumY = 0;
     int weightSum = 0;
 
     if (!f1.empty() && !f2.empty() && !f3.empty()) {
+        threeFramesCaptured = true;
         int downH = f3.size();
         int downW = f3[0].size();
+        weightSum = 0;
 
         for (int r = 0; r < downH; ++r) {
             for (int c = 0; c < downW; ++c) {
@@ -610,14 +631,31 @@ void process_frame_color(
                 int diff = maxV - minV;
 
                 if (diff > pixel_change_threshold) {
-                    sumY += v3 * diff;  // Weighted brightness
-                    weightSum += diff;
+                    sumY += v3 ;  // Weighted brightness
+                    weightSum ++;
                 }
             }
         }
+         Y = (weightSum > 0) ? double(sumY) / weightSum : 0.0;
+    }else{
+        threeFramesCaptured = false;
+        int downH = frame_matrix[frame_index].size();
+        int downW = frame_matrix[frame_index][0].size();
+        weightSum = 0;
+        for (int r = 0; r < downH; ++r) {
+            for (int c = 0; c < downW; ++c) {
+                int v3 = f3[r][c];
+                sumY += v3 ;
+                weightSum = weightSum+1;
+
+            }
+        }
+        double count = downH*downW;
+         Y = sumY/weightSum;
+
     }
 
-    double Y = (weightSum > 0) ? double(sumY) / weightSum : 0.0;
+
 
     // Step 4: Store in circular buffer for dynamic threshold
     history[idx] = Y;
@@ -626,28 +664,41 @@ void process_frame_color(
 
     int count = full ? WINDOW : idx;
     double dynMin = history[0], dynMax = history[0];
-    for (int i = 1; i < count; ++i) {
+    for (int i = 0; i < count; i++) {
         dynMin = std::min(dynMin, history[i]);
         dynMax = std::max(dynMax, history[i]);
     }
 
     // Step 5: Compute adaptive hysteresis
     double mid = (dynMin + dynMax) * 0.5;
-    double mean = std::accumulate(history, history + count, 0.0) / count;
-    double variance = 0.0;
-    for (int i = 0; i < count; ++i)
-        variance += (history[i] - mean) * (history[i] - mean);
-    variance /= count;
-    double stddev = std::sqrt(variance);
+//    double mean = std::accumulate(history, history + count, 0.0) / count;
+//    double variance = 0.0;
+//    for (int i = 0; i < count; ++i)
+//        variance += (history[i] - mean) * (history[i] - mean);
+//    variance /= count;
+//    double stddev = std::sqrt(variance);
+//
+//    double margin = std::max(stddev * 0.5, 2.0);  // Adjust multiplier and min as needed
 
-    double margin = std::max(stddev * 0.5, 2.0);  // Adjust multiplier and min as needed
 
+//    if (!ledOn && Y > mid) {
+//        ledOn = true;
+//    } else if (ledOn && Y < mid) {
+//        ledOn = false;
+//    }
 
-    if (!ledOn && Y > mid + margin) {
+    if (Y >= mid) {
         ledOn = true;
-    } else if (ledOn && Y < mid - margin) {
+    } else if (Y < mid) {
         ledOn = false;
     }
+
+    ledOnOffHistory[frame_index] = ledOn? 1.0:0.0;
+
+    for (int i = 0; i < 3; ++i) {
+        encoded |= (ledOnOffHistory[i]== 1.0 ? 1 : 0) << (2 - i);  // MSB to LSB
+    }
+    double result = static_cast<double>(encoded);
 
     // Step 6: Estimate HSV color
     double color_hsv[3];
@@ -664,6 +715,9 @@ void process_frame_color(
     double val = color_hsv[2];
     double colorCode = (double)classify_hsv_color(hue, sat, val);
 
+    frame_index = (frame_index + 1) % 3;
+
+
     // Step 7: Output results
     out_values[0] = Y;
     out_values[1] = dynMin;
@@ -671,7 +725,7 @@ void process_frame_color(
     out_values[3] = hue;
     out_values[4] = sat;
     out_values[5] = colorCode;
-    out_values[6] = ledOn ? 1.0 : 0.0;
+    out_values[6] = result;
 }
 
 
