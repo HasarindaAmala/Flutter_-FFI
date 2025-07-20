@@ -39,6 +39,8 @@ class DetectionScreen extends StatefulWidget {
 class _DetectionScreenState extends State<DetectionScreen> {
   CameraController? _controller;
   bool _cameraInitialized = false;
+  DateTime _fpsLastTime = DateTime.now();
+  int      _fpsFrameCount = 0;
 
   // ROI state:
   Offset? _boxOrigin;
@@ -151,7 +153,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
       _controller!.stopImageStream();
       setState(() {
         _detecting = false;
-        counter = 0;
+        counter = 1;
         startingCount.clear();
 
         print("ledtest results $ledtest ${ledtest.length}");
@@ -247,33 +249,33 @@ class _DetectionScreenState extends State<DetectionScreen> {
        int b = (frame-1)%3;
        int c = (frame -2)%3;
 
-       ensureSize(frame);
-       ensureSize(frame - 1);
+       ensureSize(frame-1);
        ensureSize(frame - 2);
+       ensureSize(frame - 3);
 
 
        if(a == 0){
-         ledtest[frame] =  history[2] ? 1.0:0.0 ;
-       }else if(a == 1){
-         ledtest[frame] =  history[0] ? 1.0:0.0 ;
-       }else if(a == 2){
-         ledtest[frame] =  history[1] ? 1.0:0.0 ;
-       }
-
-       if(b == 0){
          ledtest[frame-1] =  history[2] ? 1.0:0.0 ;
-       }else if(b == 1){
+       }else if(a == 1){
          ledtest[frame-1] =  history[0] ? 1.0:0.0 ;
-       }else if(b == 2){
+       }else if(a == 2){
          ledtest[frame-1] =  history[1] ? 1.0:0.0 ;
        }
 
-       if(c == 0){
+       if(b == 0){
          ledtest[frame-2] =  history[2] ? 1.0:0.0 ;
-       }else if(c == 1){
+       }else if(b == 1){
          ledtest[frame-2] =  history[0] ? 1.0:0.0 ;
-       }else if(c == 2){
+       }else if(b == 2){
          ledtest[frame-2] =  history[1] ? 1.0:0.0 ;
+       }
+
+       if(c == 0){
+         ledtest[frame-3] =  history[2] ? 1.0:0.0 ;
+       }else if(c == 1){
+         ledtest[frame-3] =  history[0] ? 1.0:0.0 ;
+       }else if(c == 2){
+         ledtest[frame-3] =  history[1] ? 1.0:0.0 ;
        }
 
 
@@ -283,10 +285,22 @@ class _DetectionScreenState extends State<DetectionScreen> {
   }
 
   void _onFrame(CameraImage img) {
-
+    if (_fpsFrameCount == 0) {
+      // first frame: reset our clock here
+      _fpsLastTime   = DateTime.now();
+    }
+    _fpsFrameCount++;
+    final now = DateTime.now();
+    final elapsed = now.difference(_fpsLastTime);
+    if (elapsed.inMilliseconds >= 1000) {
+      final fps = (_fpsFrameCount / elapsed.inMilliseconds) * 1000;
+      print("FPS: ${fps.toStringAsFixed(1)}");
+      _fpsFrameCount = 0;
+      _fpsLastTime  = now;
+    }
     if (_boxOrigin == null || _previewSize == null) return;
     if(_processing == true){
-print("dropped");
+     print("dropped");
     }
     if (_processing) return;
     _processing = true;
@@ -322,11 +336,11 @@ print("dropped");
       uvPixelStride: img.planes[1].bytesPerPixel!,
       roi:           roi,
     );
-
-    if (!mounted) {
-      _processing = false;
-      return;
-    }
+    //
+    // if (!mounted) {
+    //   _processing = false;
+    //   return;
+    // }
 
 
 
@@ -343,6 +357,7 @@ print("dropped");
     ledMainArrayUpdate(ledHistory,counter);
     //ledtest.add(_ledOn);
     brightnessList.add(_avgBrightness);
+    print("count :${counter} minVal${minVal} maxVal${maxVal} brightness ${_avgBrightness} on/off ${ledtest[counter-1] } dec_no ${_ledOn}  led_hitory ${ledHistory}");
     //_ledColorName = ledColorDetect(colorCode.toInt());
     // final idx = stats[5].toInt();               // your “colorVal” field
     // final name = ledColorDetect(idx);

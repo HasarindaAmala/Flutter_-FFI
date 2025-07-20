@@ -569,7 +569,7 @@ void process_frame_color(
 ) {
     constexpr int WINDOW = 3;
     static double history[WINDOW];
-    static double ledOnOffHistory[WINDOW] = {1,1,1};
+    static double ledOnOffHistory[WINDOW] = {1.0,1.0,1.0};
     static int idx = 0;
     int encoded = 0;
     static bool full = false;
@@ -577,6 +577,7 @@ void process_frame_color(
     const double HYSTFRAC = 0.1;
     const int pixel_change_threshold = 20;
     double Y = 0.0;
+    static int frame_count= 0;
 
     // Frame buffer history for downsampled matrices
     static std::vector<std::vector<uint8_t>> frame_matrix[3];
@@ -592,18 +593,7 @@ void process_frame_color(
     }
 
     // Step 2: Downsample and store current matrix
-    auto raw = downsampleMatrix10x10(temp_matrix, h, w);
-    frame_matrix[frame_index].resize(raw.size(), vector<uint8_t>(raw[0].size()));
-    for (int r = 0; r < (int)raw.size(); ++r) {
-        for (int c = 0; c < (int)raw[0].size(); ++c) {
-            // gather neighbors (with boundary checks)
-            uint8_t p0 = raw[r][c];
-            uint8_t p1 = (r>0   ? raw[r-1][c] : p0);
-            uint8_t p2 = (r+1<raw.size()? raw[r+1][c] : p0);
-            frame_matrix[frame_index][r][c] = median3(p0,p1,p2);
-        }
-    }
-    //frame_matrix[frame_index] = downsampleMatrix10x10(temp_matrix, h, w);
+    frame_matrix[frame_index] = downsampleMatrix10x10(temp_matrix, h, w);
     auto& f3 = frame_matrix[frame_index];
     auto& f2 = frame_matrix[(frame_index + 2) % 3];
     auto& f1 = frame_matrix[(frame_index + 1) % 3];
@@ -636,7 +626,7 @@ void process_frame_color(
                 }
             }
         }
-         Y = (weightSum > 0) ? double(sumY) / weightSum : 0.0;
+        Y = (weightSum > 0) ? double(sumY) / weightSum : 0.0;
     }else{
         threeFramesCaptured = false;
         int downH = frame_matrix[frame_index].size();
@@ -651,7 +641,7 @@ void process_frame_color(
             }
         }
         double count = downH*downW;
-         Y = sumY/weightSum;
+        Y = sumY/weightSum;
 
     }
 
@@ -694,7 +684,19 @@ void process_frame_color(
     }
 
     ledOnOffHistory[frame_index] = ledOn? 1.0:0.0;
+    if(frame_index == 2){
+        if(history[0] >= mid ){
+            ledOnOffHistory[0] = 1.0;
+        }else{
+            ledOnOffHistory[0] = 0.0;
+        }
 
+        if(history[1] >= mid ){
+            ledOnOffHistory[1] = 1.0;
+        }else{
+            ledOnOffHistory[1] = 0.0;
+        }
+    }
     for (int i = 0; i < 3; ++i) {
         encoded |= (ledOnOffHistory[i]== 1.0 ? 1 : 0) << (2 - i);  // MSB to LSB
     }
@@ -716,7 +718,7 @@ void process_frame_color(
     double colorCode = (double)classify_hsv_color(hue, sat, val);
 
     frame_index = (frame_index + 1) % 3;
-
+    frame_count ++;
 
     // Step 7: Output results
     out_values[0] = Y;
@@ -727,6 +729,8 @@ void process_frame_color(
     out_values[5] = colorCode;
     out_values[6] = result;
 }
+
+
 
 
 
