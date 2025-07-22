@@ -146,6 +146,7 @@ List<double> processFrameColor({
   required Uint8List vPlane,
   required int width,
   required int height,
+  required int count,
   required int yRowStride,
   required int uvRowStride,
   required int uvPixelStride,
@@ -161,7 +162,7 @@ List<double> processFrameColor({
 
   _bindings.process_frame_color(
     yPtr, uPtr, vPtr,
-    width, height,
+    width, height,count,
     yRowStride, uvRowStride, uvPixelStride,
     roi.left.toInt(), roi.top.toInt(),
     roi.width.toInt(), roi.height.toInt(),

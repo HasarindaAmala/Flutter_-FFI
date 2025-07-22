@@ -211,6 +211,7 @@ class NativeLibrary {
     ffi.Pointer<ffi.Uint8> v_plane,
     int width,
     int height,
+    int count,
     int y_row_stride,
     int uv_row_stride,
     int uv_pixel_stride,
@@ -226,6 +227,7 @@ class NativeLibrary {
       v_plane,
       width,
       height,
+      count,
       y_row_stride,
       uv_row_stride,
       uv_pixel_stride,
@@ -252,6 +254,7 @@ class NativeLibrary {
         ffi.Int32,
         ffi.Int32,
         ffi.Int32,
+        ffi.Int32,
         ffi.Pointer<ffi.Double>,
       )
     >
@@ -263,6 +266,7 @@ class NativeLibrary {
               ffi.Pointer<ffi.Uint8>,
               ffi.Pointer<ffi.Uint8>,
               ffi.Pointer<ffi.Uint8>,
+              int,
               int,
               int,
               int,

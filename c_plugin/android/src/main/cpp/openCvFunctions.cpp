@@ -18,6 +18,9 @@
 using namespace cv;
 constexpr int MAX_H = 256;
 constexpr int MAX_W = 256;
+uint8_t filtered_matrix[MAX_H][MAX_W];
+
+int frame_count= 0;
 
 inline uint8_t median3(uint8_t a, uint8_t b, uint8_t c) {
     return a > b ? (b > c ? b : (a > c ? c : a))
@@ -236,8 +239,8 @@ void process_frame(
     out_values[1] = minValue;
     out_values[2] = maxValue;
 }
-void debugPrintMatrix(const uint8_t matrix[MAX_H][MAX_W], int h, int w) {
-    LOGI("Matrix Size: width = %d, height = %d", w, h);
+void debugPrintMatrix(double y) {
+    LOGI("brightness values : yValue = %f", y);
 
 //    for (int r = 0; r < h; ++r) {
 //        std::ostringstream oss;
@@ -250,206 +253,123 @@ void debugPrintMatrix(const uint8_t matrix[MAX_H][MAX_W], int h, int w) {
 //        LOGI("%s", oss.str().c_str());  // one row per log line
 //    }
 }
-//void process_frame_color(
-//        const uint8_t* y_plane,
-//        const uint8_t* u_plane,
-//        const uint8_t* v_plane,
-//        int32_t width,
-//        int32_t height,
-//        int32_t y_row_stride,
-//        int32_t uv_row_stride,
-//        int32_t uv_pixel_stride,
-//        int32_t x0,
-//        int32_t y0,
-//        int32_t w,
-//        int32_t h,
-//        double* out_values
-//        // length = 6: [Ycurr, Ymin, Ymax, hue, sat, ledOn]
-//) {
-//    // --- sliding window state for dynamic threshold ---
-//    constexpr int WINDOW = 5;
-//    static double history[WINDOW];
-//    static int    idx     = 0;
-//    static bool   full    = false;
-//    static bool   ledOn   = false;
-//    const double  HYSTFRAC = 0.1;  // hysteresis as fraction of span (10%)
-//
-//    // Clip to bounds
-//    if (h > MAX_H || w > MAX_W) return; // Safety check
-//
-//// Get current frame slot (rotate 0→1→2→0…)
-//    uint8_t (*curr_matrix)[MAX_W] = frame_matrix[frame_index];
-//
-//// Fill brightness matrix for current frame
-//    for (int r = 0; r < h; ++r) {
-//        const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
-//        for (int c = 0; c < w; ++c) {
-//            curr_matrix[r][c] = yp[c];
-//        }
-//    }
-//
-//
-//
-//    auto smallMatrix = downsampleMatrix10x10(curr_matrix, h, w);
-//    debugPrintVectorMatrix(smallMatrix);
-//
-//
-//
-//// Next frame will write to next slot
-//    frame_index = (frame_index + 1) % 3;
-//    uint8_t (*f1)[MAX_W] = frame_matrix[(frame_index + 2) % 3];
-//    uint8_t (*f2)[MAX_W] = frame_matrix[(frame_index + 1) % 3];
-//    uint8_t (*f3)[MAX_W] = frame_matrix[(frame_index + 0) % 3];  // newest
-//
-//    const int pixel_change_threshold = 25; // tune this for your lighting + distance
-//
-//    uint64_t sumY = 0;
-//    int changedPixelCount = 0;
-//
-//    for (int r = 0; r < h; ++r) {
-//        for (int c = 0; c < w; ++c) {
-//            int v1 = f1[r][c];
-//            int v2 = f2[r][c];
-//            int v3 = f3[r][c];
-//
-//            int minV = std::min({v1, v2, v3});
-//            int maxV = std::max({v1, v2, v3});
-//            int diff = maxV - minV;
-//
-//            if (diff > pixel_change_threshold) {
-//                sumY += v3;  // use latest brightness
-//                changedPixelCount++;
-//            }
-//        }
-//    }
-//    double Y = (changedPixelCount > 0) ? double(sumY) / changedPixelCount : 0.0;
-//
-////    uint64_t sumY = 0;     this function for compute average brightness over ROI
-////    for (int r = 0; r < h; ++r) {
-////        const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
-////        for (int c = 0; c < w; ++c) {
-////            sumY += yp[c];
-////        }
-////    }
-////    double Y = double(sumY) / (w * h);
-//
-//    // 2) Push into circular history buffer
-//    history[idx] = Y;
-//    idx = (idx + 1) % WINDOW;
-//    if (idx == 0) full = true;
-//
-//    // 3) Compute dynamic min/max over valid samples
-//    int count = full ? WINDOW : idx;
-//    double dynMin = history[0], dynMax = history[0];
-//    for (int i = 1; i < count; ++i) {
-//        if (history[i] < dynMin) dynMin = history[i];
-//        if (history[i] > dynMax) dynMax = history[i];
-//    }
-//
-////    // 4) Compute hue & saturation as before
-////    uint64_t sumU = 0, sumV = 0;
-////    int      countUV = 0;
-////    for (int r = 0; r < h; r += 2) {
-////        const uint8_t* up = u_plane + ((y0 + r)/2) * uv_row_stride + (x0/2)*uv_pixel_stride;
-////        const uint8_t* vp = v_plane + ((y0 + r)/2) * uv_row_stride + (x0/2)*uv_pixel_stride;
-////        int blocks = (w + 1) / 2;
-////        for (int b = 0; b < blocks; ++b) {
-////            sumU += *up;  sumV += *vp;
-////            up += uv_pixel_stride;
-////            vp += uv_pixel_stride;
-////            ++countUV;
-////        }
-////    }
-////    double U = double(sumU)/countUV - 128.0;
-////    double V = double(sumV)/countUV - 128.0;
-////    double hue = std::atan2(V, U) * 180.0 / M_PI;
-////    if (hue < 0) hue += 360.0;
-////    double sat = std::sqrt(U*U + V*V) / 128.0;
-//
-//    // 5) Dynamic threshold + hysteresis
-//    double mid   = (dynMin + dynMax) * 0.5;
-//    double margin= (dynMax - dynMin) * HYSTFRAC;
-//    if (!ledOn && Y > mid + margin) {
-//        ledOn = true;
-//    } else if (ledOn && Y < mid - margin) {
-//        ledOn = false;
-//    }
-//
-//    detect_frame_color_precise(
-//            y_plane, u_plane, v_plane,
-//            width, height,
-//            y_row_stride, uv_row_stride, uv_pixel_stride,
-//            x0, y0, w, h,
-//            color_hsv
-//    );
-//
-//    double hue = color_hsv[0];
-//    double sat = color_hsv[1];
-//    double val = color_hsv[2];
-//
-//    double colorCode = (double)classify_hsv_color(hue,sat,val);
-//
-//    // 6) Write outputs
-//    out_values[0] = Y;        // current brightness
-//    out_values[1] = dynMin;   // dynamic minimum
-//    out_values[2] = dynMax;   // dynamic maximum
-//    out_values[3] = hue;      // hue
-//    out_values[4] = sat;
-//    out_values[5] = colorCode; // saturation
-//    out_values[6] = ledOn ? 1.0 : 0.0;  // LED on/off flag
-//}
 
-//void process_frame_color(
-//        const uint8_t* y_plane,
-//        const uint8_t* u_plane,
-//        const uint8_t* v_plane,
-//        int32_t width,
-//        int32_t height,
-//        int32_t y_row_stride,
-//        int32_t uv_row_stride,
-//        int32_t uv_pixel_stride,
-//        int32_t x0,
-//        int32_t y0,
-//        int32_t w,
-//        int32_t h,
-//        double* out_values  // [Y, minY, maxY, hue, sat, colorCode, ledOn]
-//) {
-//    constexpr int WINDOW = 30;
-//    static double history[WINDOW];
-//    static int idx = 0;
-//    static bool full = false;
-//    static bool ledOn = false;
-//    const double HYSTFRAC = 0.1;
-//    const int pixel_change_threshold = 25;
-//
-//    // Frame buffer history for downsampled 10x10 matrices
-//    static std::vector<std::vector<uint8_t>> frame_matrix[3];
-//    static int frame_index = 0;
-//
-//    // --- Step 1: Fill current full-resolution matrix ---
-//    static uint8_t temp_matrix[MAX_H][MAX_W];
-//    for (int r = 0; r < h; ++r) {
-//        const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
-//        for (int c = 0; c < w; ++c) {
-//            temp_matrix[r][c] = yp[c];
-//        }
-//    }
-//
-//    // --- Step 2: Downsample and store current matrix ---
-//    frame_matrix[frame_index] = downsampleMatrix10x10(temp_matrix, h, w);
-//    const auto& f3 = frame_matrix[frame_index];
-//    const auto& f2 = frame_matrix[(frame_index + 2) % 3];
-//    const auto& f1 = frame_matrix[(frame_index + 1) % 3];
-//
-//    frame_index = (frame_index + 1) % 3;
-//
-//    // --- Step 3: Compare frames to get changed pixels ---
-//    uint64_t sumY = 0;
-//    int changedPixelCount = 0;
-//
+
+
+void process_frame_color(
+        const uint8_t* y_plane,
+        const uint8_t* u_plane,
+        const uint8_t* v_plane,
+        int32_t width,
+        int32_t height,
+        int32_t Count,
+        int32_t y_row_stride,
+        int32_t uv_row_stride,
+        int32_t uv_pixel_stride,
+        int32_t x0,
+        int32_t y0,
+        int32_t w,
+        int32_t h,
+        double* out_values  // [Y, minY, maxY, hue, sat, colorCode, ledOn]
+) {
+    constexpr int WINDOW = 5;
+    static double history[WINDOW];
+    static double ledOnOffHistory[WINDOW] = {1.0,1.0,1.0,1.0,1.0};
+    static int idx = 0;
+    int encoded = 0;
+    static bool full = false;
+    static bool ledOn = false;
+    const double HYSTFRAC = 0.1;
+    const int pixel_change_threshold = 0;
+    double Y = 0.0;
+
+    // Frame buffer history for downsampled matrices
+    static std::vector<std::vector<uint8_t>> frame_matrix[5];
+    static int frame_index = 0;
+    static uint8_t temp_matrix[MAX_H][MAX_W];
+
+    if (Count == 0) {
+        // Reset history values
+        for (int i = 0; i < WINDOW; ++i) {
+            history[i] = 0.0;
+            ledOnOffHistory[i] = 1.0;
+
+        }
+        for (int i = 0; i < 5; ++i) {
+            frame_matrix[i].clear();
+
+        }
+
+
+        // Reset other variables
+        idx = 0;
+        full = false;
+        ledOn = false;
+        frame_index = 0;
+
+        // Clear temp_matrix
+        for (int i = 0; i < MAX_H; ++i) {
+            for (int j = 0; j < MAX_W; ++j) {
+                temp_matrix[i][j] = 0;
+            }
+        }
+    }
+
+
+
+    // Step 1: Fill temporary full-resolution matrix from ROI
+
+    for (int r = 0; r < h; ++r) {
+        const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
+        for (int c = 0; c < w; ++c) {
+            temp_matrix[r][c] = yp[c];
+        }
+    }
+
+    for (int r = 1; r < h - 1; ++r) {
+        for (int c = 1; c < w - 1; ++c) {
+            std::vector<uint8_t> kernel = {
+                    temp_matrix[r-1][c-1], temp_matrix[r-1][c], temp_matrix[r-1][c+1],
+                    temp_matrix[r][c-1],   temp_matrix[r][c],   temp_matrix[r][c+1],
+                    temp_matrix[r+1][c-1], temp_matrix[r+1][c], temp_matrix[r+1][c+1]
+            };
+            std::nth_element(kernel.begin(), kernel.begin() + 4, kernel.end());
+            filtered_matrix[r][c] = kernel[4];  // median
+        }
+    }
+
+    // Step 2: Downsample and store current matrix
+    frame_matrix[frame_index] = downsampleMatrix10x10(filtered_matrix, h, w);
+    auto& f2 = frame_matrix[(frame_index + 2) % 5];
+    auto& f1 = frame_matrix[(frame_index + 1) % 5];
+    auto& f3 = frame_matrix[(frame_index+3)%5];
+    auto& f4 = frame_matrix[(frame_index + 4) % 5];
+    auto& f5 = frame_matrix[(frame_index ) % 5];
+
+
+
+    // Step 3: Compare frames to detect changed pixels
+    uint64_t sumY = 0;
+    int weightSum = 0;
+    int downH = frame_matrix[frame_index].size();
+    int downW = frame_matrix[frame_index][0].size();
+    weightSum = 0;
+    for (int r = 0; r < downH; ++r) {
+        for (int c = 0; c < downW; ++c) {
+            int v3 = f5[r][c];
+            sumY += v3 ;
+            weightSum = weightSum+1;
+
+        }
+    }
+
+    Y = sumY/weightSum;
+
 //    if (!f1.empty() && !f2.empty() && !f3.empty()) {
+//        threeFramesCaptured = true;
 //        int downH = f3.size();
 //        int downW = f3[0].size();
+//        weightSum = 0;
 //
 //        for (int r = 0; r < downH; ++r) {
 //            for (int c = 0; c < downW; ++c) {
@@ -464,191 +384,34 @@ void debugPrintMatrix(const uint8_t matrix[MAX_H][MAX_W], int h, int w) {
 //                if (diff > pixel_change_threshold) {
 //                    sumY += v3 * diff;
 //                    weightSum += diff;
-//                    changedPixelCount++;
 //                }
+//
 //            }
 //        }
-//    }
+//        Y = (weightSum > 0) ? double(sumY) / weightSum : 0.0;
+//    }else{
+//        threeFramesCaptured = false;
+//        int downH = frame_matrix[frame_index].size();
+//        int downW = frame_matrix[frame_index][0].size();
+//        weightSum = 0;
+//        for (int r = 0; r < downH; ++r) {
+//            for (int c = 0; c < downW; ++c) {
+//                int v3 = f3[r][c];
+//                sumY += v3 ;
+//                weightSum = weightSum+1;
 //
-//    double Y = (weightSum > 0) ? double(sumY) / weightSum : 0.0;
-//
-//    // --- Step 4: Store in circular buffer ---
-//    history[idx] = Y;
-//    idx = (idx + 1) % WINDOW;
-//    if (idx == 0) full = true;
-//
-//    int count = full ? WINDOW : idx;
-//    double dynMin = history[0], dynMax = history[0];
-//    for (int i = 1; i < count; ++i) {
-//        dynMin = std::min(dynMin, history[i]);
-//        dynMax = std::max(dynMax, history[i]);
-//    }
-//
-//    // --- Step 5: Compute average U/V for HSV ---
-//    uint64_t sumU = 0, sumV = 0;
-//    int countUV = 0;
-//    for (int r = 0; r < h; r += 2) {
-//        const uint8_t* up = u_plane + ((y0 + r) / 2) * uv_row_stride + (x0 / 2) * uv_pixel_stride;
-//        const uint8_t* vp = v_plane + ((y0 + r) / 2) * uv_row_stride + (x0 / 2) * uv_pixel_stride;
-//        int blocks = (w + 1) / 2;
-//        for (int b = 0; b < blocks; ++b) {
-//            sumU += *up;
-//            sumV += *vp;
-//            up += uv_pixel_stride;
-//            vp += uv_pixel_stride;
-//            countUV++;
+//            }
 //        }
+//
+//        Y = sumY/weightSum;
+//
 //    }
-//
-//    double U = double(sumU) / countUV - 128.0;
-//    double V = double(sumV) / countUV - 128.0;
-//    double hue = std::atan2(V, U) * 180.0 / M_PI;
-//    if (hue < 0) hue += 360.0;
-//    double sat = std::sqrt(U * U + V * V) / 128.0;
-//
-//    // --- Step 6: Hysteresis ---
-//    double mid = (dynMin + dynMax) * 0.5;
-//    //double margin = (dynMax - dynMin) * HYSTFRAC;
-//
-//    double mean = std::accumulate(history, history + count, 0.0) / count;
-//    double variance = 0;
-//    for (int i = 0; i < count; ++i)
-//        variance += (history[i] - mean) * (history[i] - mean);
-//    variance /= count;
-//    double stddev = std::sqrt(variance);
-//
-//    double margin = std::max(stddev * 0.5, 2.0); // adaptive, min 2.0 threshold
-//
-//    if (!ledOn && Y > mid + margin) {
-//        ledOn = true;
-//    } else if (ledOn && Y < mid - margin) {
-//        ledOn = false;
-//    }
-//
-//    // --- Optional: Refined color classification ---
-//    double color_hsv[3];
-//    detect_frame_color_precise(
-//            y_plane, u_plane, v_plane,
-//            width, height,
-//            y_row_stride, uv_row_stride, uv_pixel_stride,
-//            x0, y0, w, h,
-//            color_hsv
-//    );
-//
-//    hue = color_hsv[0];
-//    sat = color_hsv[1];
-//    double val = color_hsv[2];
-//
-//    double colorCode = (double)classify_hsv_color(hue, sat, val);
-//
-//    // --- Step 7: Output ---
-//    out_values[0] = Y;
-//    out_values[1] = dynMin;
-//    out_values[2] = dynMax;
-//    out_values[3] = hue;
-//    out_values[4] = sat;
-//    out_values[5] = colorCode;
-//    out_values[6] = ledOn ? 1.0 : 0.0;
-//}
-
-
-void process_frame_color(
-        const uint8_t* y_plane,
-        const uint8_t* u_plane,
-        const uint8_t* v_plane,
-        int32_t width,
-        int32_t height,
-        int32_t y_row_stride,
-        int32_t uv_row_stride,
-        int32_t uv_pixel_stride,
-        int32_t x0,
-        int32_t y0,
-        int32_t w,
-        int32_t h,
-        double* out_values  // [Y, minY, maxY, hue, sat, colorCode, ledOn]
-) {
-    constexpr int WINDOW = 3;
-    static double history[WINDOW];
-    static double ledOnOffHistory[WINDOW] = {1.0,1.0,1.0};
-    static int idx = 0;
-    int encoded = 0;
-    static bool full = false;
-    static bool ledOn = false;
-    const double HYSTFRAC = 0.1;
-    const int pixel_change_threshold = 30;
-    double Y = 0.0;
-    static int frame_count= 0;
-
-    // Frame buffer history for downsampled matrices
-    static std::vector<std::vector<uint8_t>> frame_matrix[3];
-    static int frame_index = 0;
-
-    // Step 1: Fill temporary full-resolution matrix from ROI
-    static uint8_t temp_matrix[MAX_H][MAX_W];
-    for (int r = 0; r < h; ++r) {
-        const uint8_t* yp = y_plane + (y0 + r) * y_row_stride + x0;
-        for (int c = 0; c < w; ++c) {
-            temp_matrix[r][c] = yp[c];
-        }
-    }
-
-    // Step 2: Downsample and store current matrix
-    frame_matrix[frame_index] = downsampleMatrix10x10(temp_matrix, h, w);
-    auto& f3 = frame_matrix[frame_index];
-    auto& f2 = frame_matrix[(frame_index + 2) % 3];
-    auto& f1 = frame_matrix[(frame_index + 1) % 3];
-
-
-
-    // Step 3: Compare frames to detect changed pixels
-    uint64_t sumY = 0;
-    int weightSum = 0;
-
-    if (!f1.empty() && !f2.empty() && !f3.empty()) {
-        threeFramesCaptured = true;
-        int downH = f3.size();
-        int downW = f3[0].size();
-        weightSum = 0;
-
-        for (int r = 0; r < downH; ++r) {
-            for (int c = 0; c < downW; ++c) {
-                int v1 = f1[r][c];
-                int v2 = f2[r][c];
-                int v3 = f3[r][c];
-
-                int minV = std::min({v1, v2, v3});
-                int maxV = std::max({v1, v2, v3});
-                int diff = maxV - minV;
-
-                if (diff > pixel_change_threshold) {
-                    sumY += v3 ;  // Weighted brightness
-                    weightSum ++;
-                }
-            }
-        }
-        Y = (weightSum > 0) ? double(sumY) / weightSum : 0.0;
-    }else{
-        threeFramesCaptured = false;
-        int downH = frame_matrix[frame_index].size();
-        int downW = frame_matrix[frame_index][0].size();
-        weightSum = 0;
-        for (int r = 0; r < downH; ++r) {
-            for (int c = 0; c < downW; ++c) {
-                int v3 = f3[r][c];
-                sumY += v3 ;
-                weightSum = weightSum+1;
-
-            }
-        }
-        double count = downH*downW;
-        Y = sumY/weightSum;
-
-    }
 
 
 
     // Step 4: Store in circular buffer for dynamic threshold
     history[idx] = Y;
+    debugPrintMatrix(Y);
     idx = (idx + 1) % WINDOW;
     if (idx == 0) full = true;
 
@@ -684,7 +447,7 @@ void process_frame_color(
     }
 
     ledOnOffHistory[frame_index] = ledOn? 1.0:0.0;
-    if(frame_index == 2){
+    if(frame_index == 4){
         if(history[0] >= mid ){
             ledOnOffHistory[0] = 1.0;
         }else{
@@ -696,9 +459,21 @@ void process_frame_color(
         }else{
             ledOnOffHistory[1] = 0.0;
         }
+
+        if(history[2] >= mid ){
+            ledOnOffHistory[2] = 1.0;
+        }else{
+            ledOnOffHistory[2] = 0.0;
+        }
+
+        if(history[3] >= mid ){
+            ledOnOffHistory[3] = 1.0;
+        }else{
+            ledOnOffHistory[3] = 0.0;
+        }
     }
-    for (int i = 0; i < 3; ++i) {
-        encoded |= (ledOnOffHistory[i]== 1.0 ? 1 : 0) << (2 - i);  // MSB to LSB
+    for (int i = 0; i < 5; ++i) {
+        encoded |= (ledOnOffHistory[i]== 1.0 ? 1 : 0) << (4 - i);  // MSB to LSB
     }
     double result = static_cast<double>(encoded);
 
@@ -717,7 +492,7 @@ void process_frame_color(
     double val = color_hsv[2];
     double colorCode = (double)classify_hsv_color(hue, sat, val);
 
-    frame_index = (frame_index + 1) % 3;
+    frame_index = (frame_index + 1) % 5;
     frame_count ++;
 
     // Step 7: Output results
@@ -938,10 +713,10 @@ int classify_hsv_color(double hue, double sat, double val) {
         return 0; // black
     }
     // 2) If saturation is very low, treat as "gray" (since hue is unreliable)
-    if (sat < 0.15) {
-        if (val > 0.85)  return 1;  //white = 1
-        else              return 2;  // gray = 2
-    }
+//    if (sat < 0.15) {
+//        if (val > 0.85)  return 1;  //white = 1
+//        else              return 2;  // gray = 2
+//    }
 
     // 3) Now hue is meaningful. Wrap into [0, 360).
     hue = fmod(hue, 360.0);
@@ -955,7 +730,7 @@ int classify_hsv_color(double hue, double sat, double val) {
         return 4; //orange = 4
     }
     if (hue >  40.0 && hue <=  70.0) {
-        return 5; //yellow = 5
+        return 9; //yellow = 5
     }
     if (hue >  70.0 && hue <= 160.0) {
         return 6;  //green = 6

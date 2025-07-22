@@ -55,6 +55,7 @@ void process_frame_color(
         const uint8_t* v_plane,
         int32_t width,
         int32_t height,
+        int32_t count,
         int32_t y_row_stride,
         int32_t uv_row_stride,
         int32_t uv_pixel_stride,

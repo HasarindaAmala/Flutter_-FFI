@@ -4,7 +4,7 @@
 
 #define NUM_LEDS    32
 #define DATA_PIN    2
-#define BRIGHTNESS  200
+#define BRIGHTNESS  150
 
 CRGB leds[NUM_LEDS];
 
@@ -21,7 +21,7 @@ uint8_t  gMode     = 0;
 uint8_t  gR        = 0;
 uint8_t  gG        = 0;
 uint8_t  gB        = 0;
-uint16_t gInterval = 60;
+uint16_t gInterval = 99;
 
 enum BlinkState {
   BS_IDLE,
@@ -54,7 +54,7 @@ static void blinkColor200ms(const CRGB &color) {
   stripOff();
   delay(gInterval);
 }
-const uint8_t blinkIndices[] = {11, 12,19, 20};
+const uint8_t blinkIndices[] = {10,11, 12,13,18,19,21, 20,2,3,4,5,26,27,28,29};
 const uint8_t numToBlink = sizeof(blinkIndices) / sizeof(blinkIndices[0]);
 
 void ControllLed(uint8_t mode_, uint8_t r, uint8_t g, uint8_t b, uint16_t interval) {

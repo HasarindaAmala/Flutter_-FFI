@@ -14,6 +14,20 @@ List<double> brightnessList =[];
  int? _lastFrame;
 List<int> intervals = [];
 int counter = 1;
+
+List<int> ledOnOffCompute = [];
+String currentColor = "";
+List<List<dynamic>> ledPairCompute = [[], []];
+List<List<dynamic>> finalBits = [[], []];
+bool bitStart = false;
+int? bitStartIndex;
+
+int greenBlinkCount = 0;
+bool transmissionStarted = false;
+int transmissionStartIndex = -1;
+List<int> collectedBits = [];
+List<String> collectedColors = [];
+
 /// A small data class to hold one frame’s detection results
 class DetectionResult {
   final List<double> stats;     // [Ycurr, Ymin, Ymax, hue, sat, colorVal, ledFlag?]
@@ -102,6 +116,9 @@ class _DetectionScreenState extends State<DetectionScreen> {
   late final StreamController<DetectionResult> _valueController;
   late final StreamController<List<int>> byteController;
 
+
+
+
   //Timer? _fpsTimer;
 
   @override
@@ -167,10 +184,18 @@ class _DetectionScreenState extends State<DetectionScreen> {
       counter = 1;
       minMax.clear();
       ledtest.clear();
+      ledOnOffCompute.clear();
+      ledPairCompute= [[], []];
       brightnessList.clear();
+      finalBits=  [[], []];
+      greenBlinkCount = 0;
+      print("starting output : $finalBits");
       _controller!.startImageStream(_onFrame);
+
       setState(() => _detecting = true);
+
     } else if (_controller != null && _detecting) {
+      print("final output : $finalBits");
       _controller!.stopImageStream();
 
       setState(() {
@@ -180,27 +205,6 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
       }
 
-    // if (_detecting) {
-    //   _controller!.stopImageStream();
-    //   setState(() {
-    //     _detecting = false;
-    //     counter = 1;
-    //     startingCount.clear();
-    //
-    //     print("ledtest results $ledtest ${ledtest.length}");
-    //
-    //   });
-    //
-    // } else {
-    //   minMax.clear();
-    //   ledtest.clear();
-    //   brightnessList.clear();
-    //   _controller!.startImageStream(_onFrame);
-    //   setState(() {
-    //     _detecting = true;
-    //     startingCount.clear();
-    //   });
-    // }
   }
 
   // Convert an index to a color name
@@ -209,11 +213,11 @@ class _DetectionScreenState extends State<DetectionScreen> {
     "yellow",
     "gray",
     "red",
-    "red",
+    "orange",
     "yellow",
     "green",
     "green",
-    "blue",
+    "green",
     "magenta",
     "red",
     "unknown",
@@ -223,37 +227,23 @@ class _DetectionScreenState extends State<DetectionScreen> {
     return _ledColorNames[idx];
   }
 
-  // void _onFrame(CameraImage img) {
-  //   final now = DateTime.now().millisecondsSinceEpoch;
-  //   if (_lastFrame != null) {
-  //     final interval = now - _lastFrame!;
-  //     intervals.add(interval);
-  //     print("📸 Frame interval: $interval ms");  // <-- Add this line
-  //
-  //     if (intervals.length >= 100) {
-  //       final avg = intervals.reduce((a, b) => a + b) / intervals.length;
-  //       print("⚡ Average FPS over last 100 frames: ${(1000 / avg).toStringAsFixed(1)}");
-  //       intervals.clear();
-  //     }
-  //   }
-  //   _lastFrame = now;
-  // }
+
 
   List<bool> decodeLedHistory(double encoded) {
     int val = encoded.toInt(); // convert from double
-    return List<bool>.generate(3, (i) => ((val >> (2 - i)) & 1) == 1);
+    return List<bool>.generate(5, (i) => ((val >> (4 - i)) & 1) == 1);
   }
   void updateLedTest(List<bool> decodedHistory, int frameIndex, List<bool> ledtest) {
     // Order from oldest to newest using circular buffer logic
-    for (int i = 0; i < 3; i++) {
-      int actualIndex = (frameIndex + 1 + i) % 3;
+    for (int i = 0; i < 5; i++) {
+      int actualIndex = (frameIndex + 1 + i) % 5;
       // This corresponds to the order: oldest, mid, newest
       bool state = decodedHistory[actualIndex];
 
       if (ledtest.length <= i + frameIndex) {
         ledtest.add(state); // Not enough data yet
       } else {
-        ledtest[ledtest.length - 3 + i] = state;
+        ledtest[ledtest.length - 5 + i] = state;
       }
     }
   }
@@ -268,45 +258,85 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
 
 
-     if(frame<4){
+     if(frame<6){
 
-       for(int i = 0; i< 3; i++){
+       for(int i = 0; i< 5; i++){
          ensureSize(i);
          ledtest[i] = history[i] ? 1.0:0.0;
        }
 
      }else{
-       int a = frame%3;
-       int b = (frame-1)%3;
-       int c = (frame -2)%3;
+       int a = frame%5;
+       int b = (frame-1)%5;
+       int c = (frame -2)%5;
+       int d = (frame -3)%5;
+       int e = (frame -4)%5;
 
        ensureSize(frame-1);
-       ensureSize(frame - 2);
-       ensureSize(frame - 3);
+       ensureSize(frame -2);
+       ensureSize(frame -3);
+       ensureSize(frame -4);
+       ensureSize(frame -5);
 
 
        if(a == 0){
-         ledtest[frame-1] =  history[2] ? 1.0:0.0 ;
+         ledtest[frame-1] =  history[4] ? 1.0:0.0 ;
        }else if(a == 1){
          ledtest[frame-1] =  history[0] ? 1.0:0.0 ;
        }else if(a == 2){
          ledtest[frame-1] =  history[1] ? 1.0:0.0 ;
+       } else if(a == 3){
+         ledtest[frame-1] =  history[2] ? 1.0:0.0 ;
+       }else if(a == 4){
+         ledtest[frame-1] =  history[3] ? 1.0:0.0 ;
        }
 
        if(b == 0){
-         ledtest[frame-2] =  history[2] ? 1.0:0.0 ;
+         ledtest[frame-2] =  history[4] ? 1.0:0.0 ;
        }else if(b == 1){
          ledtest[frame-2] =  history[0] ? 1.0:0.0 ;
        }else if(b == 2){
          ledtest[frame-2] =  history[1] ? 1.0:0.0 ;
+       } else if(b == 3){
+         ledtest[frame-2] =  history[2] ? 1.0:0.0 ;
+       }else if(b == 4){
+         ledtest[frame-2] =  history[3] ? 1.0:0.0 ;
        }
 
        if(c == 0){
-         ledtest[frame-3] =  history[2] ? 1.0:0.0 ;
+         ledtest[frame-3] =  history[4] ? 1.0:0.0 ;
        }else if(c == 1){
          ledtest[frame-3] =  history[0] ? 1.0:0.0 ;
        }else if(c == 2){
          ledtest[frame-3] =  history[1] ? 1.0:0.0 ;
+       } else if(c == 3){
+         ledtest[frame-3] =  history[2] ? 1.0:0.0 ;
+       }else if(c == 4){
+         ledtest[frame-3] =  history[3] ? 1.0:0.0 ;
+       }
+
+       if(d == 0){
+         ledtest[frame-4] =  history[4] ? 1.0:0.0 ;
+       }else if(d == 1){
+         ledtest[frame-4] =  history[0] ? 1.0:0.0 ;
+       }else if(d == 2){
+         ledtest[frame-4] =  history[1] ? 1.0:0.0 ;
+       } else if(d == 3){
+         ledtest[frame-4] =  history[2] ? 1.0:0.0 ;
+       }else if(d == 4){
+         ledtest[frame-4] =  history[3] ? 1.0:0.0 ;
+       }
+
+       if(e == 0){
+         ledtest[frame-5] =  history[4] ? 1.0:0.0 ;
+       }else if(e == 1){
+         ledtest[frame-5] =  history[0] ? 1.0:0.0 ;
+       }else if(e == 2){
+         ledtest[frame-5] =  history[1] ? 1.0:0.0 ;
+       } else if(e == 3){
+         ledtest[frame-5] =  history[2] ? 1.0:0.0 ;
+       }else if(e == 4){
+         ledtest[frame-5] =  history[3] ? 1.0:0.0 ;
        }
 
 
@@ -353,12 +383,12 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
     if (_boxOrigin == null || _previewSize == null) return;
 
-    // ─── 2) Measurement start ──────────────────────────────
-    if (_measurementStart == null) {
-      _measurementStart = now;
-      _startFpsTimer();                   // every 500 ms
-      _startMeasurementTimer();           // single 2 s timer
-    }
+    // // ─── 2) Measurement start ──────────────────────────────
+    // if (_measurementStart == null) {
+    //   _measurementStart = now;
+    //   _startFpsTimer();                   // every 500 ms
+    //   _startMeasurementTimer();           // single 2 s timer
+    // }
 
 
     _fpsFrameCount++;
@@ -385,7 +415,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     }
     final roi = _lastRoi!;
 
-
+    //print("start function");
 
     // Call the native FFI function
     final stats = processFrameColor(
@@ -394,17 +424,12 @@ class _DetectionScreenState extends State<DetectionScreen> {
       vPlane:        img.planes[2].bytes,
       width:         img.width,
       height:        img.height,
+      count:         counter-1,
       yRowStride:    img.planes[0].bytesPerRow,
       uvRowStride:   img.planes[1].bytesPerRow,
       uvPixelStride: img.planes[1].bytesPerPixel!,
       roi:           roi,
     );
-    //
-    // if (!mounted) {
-    //   _processing = false;
-    //   return;
-    // }
-
 
 
     // Update all fields, then push to stream
@@ -420,8 +445,101 @@ class _DetectionScreenState extends State<DetectionScreen> {
     ledMainArrayUpdate(ledHistory,counter);
     //ledtest.add(_ledOn);
     brightnessList.add(_avgBrightness);
-    print("count :${counter} minVal${minVal} maxVal${maxVal} brightness ${_avgBrightness} on/off ${ledtest[counter-1] } dec_no ${_ledOn}  led_hitory ${ledHistory}");
-    //_ledColorName = ledColorDetect(colorCode.toInt());
+    _ledColorName = ledColorDetect(colorCode.toInt());
+    if (ledPairCompute.isEmpty) {
+      ledPairCompute.add([]); // led status row
+      ledPairCompute.add([]); // color row
+    }
+    ledPairCompute[0].add(ledtest[counter-1] == 1.0 ? 1 : 0);
+    ledPairCompute[1].add(_ledColorName);
+
+    if (counter > 5 && !bitStart) {
+      for (int i = 0; i < ledPairCompute[0].length - 1; i++) {
+        if (ledPairCompute[0][i] == 1 && ledPairCompute[0][i + 1] == 1) {
+          bitStart = true;
+          bitStartIndex = i; // Start grouping from here
+          break;
+        }
+      }
+    }
+
+// Step 2: Group into 3s and classify (if start was detected)
+    if (bitStart && bitStartIndex != null) {
+      // Only group chunks that haven’t been grouped before
+      int nextGroupStart = bitStartIndex! + finalBits[0].length * 3;
+
+      while (nextGroupStart + 2 < ledPairCompute[0].length){
+        int a = ledPairCompute[0][nextGroupStart];
+        String colorA =  a != 0?  ledPairCompute[1][nextGroupStart]:"Black"; // ledPairCompute[1][nextGroupStart] = "green"
+        int b = ledPairCompute[0][nextGroupStart + 1];
+        String colorB =  b != 0?  ledPairCompute[1][nextGroupStart]:"Black";
+        int c = ledPairCompute[0][nextGroupStart + 2];
+        String colorC =  c != 0?  ledPairCompute[1][nextGroupStart]:"Black";
+
+        if(colorA == colorB && colorA == colorC && colorA != "Black"){
+          //thunama eka pata
+          currentColor = colorA;
+        }else if((colorA == colorB || colorA == colorC) && colorA != "Black"){
+          //color eka A
+          currentColor = colorA;
+        }else if(colorB ==colorC && colorB != "Black"){
+          //color eka B
+          currentColor = colorB;
+        }else{
+          // off state
+          currentColor = "Black";
+        }
+        int sum = a + b + c;
+        int decodedBit = sum >= 2 ? 1 : 0; // Majority voting
+        decodedBit == 1? finalBits[1].add(currentColor):finalBits[1].add("Black");
+        finalBits[0].add(decodedBit);
+        nextGroupStart += 3;
+      }
+    }
+
+    final lp = finalBits;
+    final len = lp[0].length;
+    if ( !transmissionStarted && len >= 5) {     //!transmissionStarted &&
+      if (lp[0][len - 5] == 1 && lp[1][len - 5] == "green" &&
+          lp[0][len - 3] == 1 && lp[1][len - 3] == "green" &&
+          lp[0][len - 1] == 1 && lp[1][len - 1] == "green") {
+        transmissionStarted = true;
+        greenBlinkCount ++;
+        transmissionStartIndex = len; // next index is yellow
+        print(">>> Transmission started at frame e $transmissionStartIndex");
+        if(greenBlinkCount == 2){
+          _toggleDetect();
+        }
+
+
+      }
+    }
+
+    if (transmissionStarted && len >= transmissionStartIndex + 10) {
+      List<int> bits = [];
+      List<String> colors = [];
+
+      for (int i = transmissionStartIndex + 1; i <= transmissionStartIndex + 8; i++) {
+        final isOn = lp[0][i] == 1;
+        final color = lp[1][i];
+        final bit = (isOn && color == "red") ? 1 : 0;
+        bits.add(bit);
+        colors.add(color);
+      }
+
+      print(">>> Received 8 bits: $bits");
+      print(">>> Colors: $colors");
+
+      // Reset
+      transmissionStarted = false;
+      transmissionStartIndex = -1;
+
+      // Send to UI / controller
+      // byteController.sink.add(bits);
+    }
+
+    //print("count :$counter minVal $minVal maxVal $maxVal brightness $_avgBrightness on/off ${ledtest[counter-1] } dec_no $_ledOn  led_history: $ledHistory  color : $_ledColorName");
+
     // final idx = stats[5].toInt();               // your “colorVal” field
     // final name = ledColorDetect(idx);
     // print("colorVal idx=$idx → $name  (stats[6]=${stats[6]})");
@@ -880,6 +998,17 @@ class ControlPanel extends StatelessWidget {
               ),
             ),
             Text("minMax: ${minMax.length}"),
+             const SizedBox(height: 10,),
+            // SizedBox(
+            //   height: 150,
+            //   child: SingleChildScrollView(
+            //     child: Text(
+            //       formatOnOffComputeList(ledOnOffCompute),
+            //       style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
+            //     ),
+            //   ),
+            // ),
+            // Text("on/off values: ${ledOnOffCompute.length}"),
           ],
         ),
       ),
@@ -905,6 +1034,15 @@ String formatBrightnessList(List<double> list, {int wrap = 10}) {
   return buffer.toString();
 }
 String formatminMaxList(List<List<double>> list, {int wrap = 10}) {
+  final buffer = StringBuffer();
+  for (int i = 0; i < list.length; i++) {
+    buffer.write(list[i]);
+    if ((i + 1) % wrap == 0) buffer.write('\n');
+    else buffer.write(', ');
+  }
+  return buffer.toString();
+}
+String formatOnOffComputeList(List<int> list, {int wrap = 10}) {
   final buffer = StringBuffer();
   for (int i = 0; i < list.length; i++) {
     buffer.write(list[i]);
