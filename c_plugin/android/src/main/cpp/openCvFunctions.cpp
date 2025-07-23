@@ -21,7 +21,7 @@ constexpr int MAX_W = 256;
 uint8_t filtered_matrix[MAX_H][MAX_W];
 
 int frame_count= 0;
-
+bool firstTimeToggle = true;
 inline uint8_t median3(uint8_t a, uint8_t b, uint8_t c) {
     return a > b ? (b > c ? b : (a > c ? c : a))
                  : (a > c ? a : (b > c ? b : c));
@@ -306,6 +306,7 @@ void process_frame_color(
         full = false;
         ledOn = false;
         frame_index = 0;
+        firstTimeToggle = false;
 
         // Clear temp_matrix
         for (int i = 0; i < MAX_H; ++i) {
@@ -447,7 +448,7 @@ void process_frame_color(
     }
 
     ledOnOffHistory[frame_index] = ledOn? 1.0:0.0;
-    if(frame_index == 4){
+    if(frame_index == 4 && firstTimeToggle){
         if(history[0] >= mid ){
             ledOnOffHistory[0] = 1.0;
         }else{
@@ -471,6 +472,7 @@ void process_frame_color(
         }else{
             ledOnOffHistory[3] = 0.0;
         }
+        firstTimeToggle = false;
     }
     for (int i = 0; i < 5; ++i) {
         encoded |= (ledOnOffHistory[i]== 1.0 ? 1 : 0) << (4 - i);  // MSB to LSB
@@ -723,29 +725,30 @@ int classify_hsv_color(double hue, double sat, double val) {
     if (hue < 0) hue += 360.0;
 
     // 4) Check known hue ranges:
-    if ((hue >= 350.0 && hue <= 360.0) || (hue >=   0.0 && hue <=  10.0)) {
+    if ((hue >= 270.0 && hue <= 360.0) || (hue >=   0.0 && hue <=  120.0)) {
         return 3; // red = 3
     }
-    if (hue >  10.0 && hue <=  40.0) {
-        return 4; //orange = 4
-    }
-    if (hue >  40.0 && hue <=  70.0) {
-        return 9; //yellow = 5
-    }
-    if (hue >  70.0 && hue <= 160.0) {
-        return 6;  //green = 6
-    }
-    if (hue > 160.0 && hue <= 200.0) {
-        return 7;  // cyan = 7
-    }
-    if (hue > 200.0 && hue <= 260.0) {
-        return 8;   //blue = 8
-    }
-    if (hue > 260.0 && hue <= 330.0) {
-        return 9;   // magenda = 9
-    }
-    if (hue > 330.0 && hue < 350.0) {
-        return 10;  // pink = 10
+//    if (hue >  10.0 && hue <=  40.0) {
+//        return 4; //orange = 4
+//    }
+//    if (hue >  40.0 && hue <=  70.0) {
+//        return 9; //yellow = 5
+//    }
+//    if (hue >  60.0 && hue <= 180.0) {
+//        return 6;  //green = 6
+//    }
+//    if (hue > 160.0 && hue <= 200.0) {
+//        return 7;  // cyan = 7
+//    }
+//    if (hue > 200.0 && hue <= 260.0) {
+//        return 8;   //blue = 8
+
+//    }
+//    if (hue > 260.0 && hue <= 330.0) {
+//        return 9;   // magenda = 9
+//    }
+    if (hue > 120 && hue < 270) {
+        return 8;  // blue
     }
     // Fallback
     return 11;  //unknown = 11

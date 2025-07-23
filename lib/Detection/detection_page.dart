@@ -51,7 +51,7 @@ class DetectionScreen extends StatefulWidget {
 }
 
 class _DetectionScreenState extends State<DetectionScreen> {
-  static const warmUpDuration        = Duration(milliseconds: 200);
+  static const warmUpDuration        = Duration(milliseconds: 300);
   static const measurementDuration   = Duration(seconds: 2);
   static const fpsLogInterval        = Duration(milliseconds: 500);
 
@@ -189,6 +189,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
       brightnessList.clear();
       finalBits=  [[], []];
       greenBlinkCount = 0;
+      bitStart = false;
       print("starting output : $finalBits");
       _controller!.startImageStream(_onFrame);
 
@@ -213,11 +214,11 @@ class _DetectionScreenState extends State<DetectionScreen> {
     "yellow",
     "gray",
     "red",
-    "orange",
+    "red",
     "yellow",
     "green",
     "green",
-    "green",
+    "blue",
     "magenta",
     "red",
     "unknown",
@@ -446,16 +447,25 @@ class _DetectionScreenState extends State<DetectionScreen> {
     //ledtest.add(_ledOn);
     brightnessList.add(_avgBrightness);
     _ledColorName = ledColorDetect(colorCode.toInt());
-    if (ledPairCompute.isEmpty) {
-      ledPairCompute.add([]); // led status row
-      ledPairCompute.add([]); // color row
-    }
+    collectedColors.add(_ledColorName);
+    // if (ledPairCompute.isEmpty) {
+    //   ledPairCompute.add([]); // led status row
+    //   ledPairCompute.add([]); // color row
+    // }
     ledPairCompute[0].add(ledtest[counter-1] == 1.0 ? 1 : 0);
     ledPairCompute[1].add(_ledColorName);
 
+    if(counter == 5){
+      for (int i = 0; i <= 4; i++) {
+        final onOff = ledtest[i] == 1.0? 1:0;
+        ledPairCompute[0][i] = onOff;
+        ledPairCompute[1][i] = onOff == 1 ? collectedColors[i] : "Black";
+      }
+    }
+
     if (counter > 5 && !bitStart) {
-      for (int i = 0; i < ledPairCompute[0].length - 1; i++) {
-        if (ledPairCompute[0][i] == 1 && ledPairCompute[0][i + 1] == 1) {
+      for (int i = 0; i < ledPairCompute[0].length - 2; i++) {
+        if (ledPairCompute[0][i] == 1 && ledPairCompute[0][i + 1] == 1 && ledPairCompute[0][i + 2] == 1) {
           bitStart = true;
           bitStartIndex = i; // Start grouping from here
           break;
@@ -470,11 +480,11 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
       while (nextGroupStart + 2 < ledPairCompute[0].length){
         int a = ledPairCompute[0][nextGroupStart];
-        String colorA =  a != 0?  ledPairCompute[1][nextGroupStart]:"Black"; // ledPairCompute[1][nextGroupStart] = "green"
+        String colorA = ( a ==1 ?  ledPairCompute[1][nextGroupStart]:"Black"); // ledPairCompute[1][nextGroupStart] = "green"
         int b = ledPairCompute[0][nextGroupStart + 1];
-        String colorB =  b != 0?  ledPairCompute[1][nextGroupStart]:"Black";
+        String colorB =  b == 1?  ledPairCompute[1][nextGroupStart+1]:"Black";
         int c = ledPairCompute[0][nextGroupStart + 2];
-        String colorC =  c != 0?  ledPairCompute[1][nextGroupStart]:"Black";
+        String colorC =  c == 1?  ledPairCompute[1][nextGroupStart+2]:"Black";
 
         if(colorA == colorB && colorA == colorC && colorA != "Black"){
           //thunama eka pata
@@ -499,46 +509,61 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
     final lp = finalBits;
     final len = lp[0].length;
-    if ( !transmissionStarted && len >= 5) {     //!transmissionStarted &&
-      if (lp[0][len - 5] == 1 && lp[1][len - 5] == "green" &&
-          lp[0][len - 3] == 1 && lp[1][len - 3] == "green" &&
-          lp[0][len - 1] == 1 && lp[1][len - 1] == "green") {
+    if ( !transmissionStarted && len >= 11) {     //!transmissionStarted &&
+      if (lp[0][len - 5] == 1 && lp[1][len - 5] == "blue" &&
+          lp[0][len - 3] == 1 && lp[1][len - 3] == "blue" &&
+          lp[0][len - 1] == 1 && lp[1][len - 1] == "blue"&&
+          lp[0][len - 7] == 1 && lp[1][len - 7] == "red" &&
+          lp[0][len - 9] == 1 && lp[1][len - 9] == "red" &&
+          lp[0][len - 11] == 1 && lp[1][len - 11] == "red"
+
+      ) {
         transmissionStarted = true;
         greenBlinkCount ++;
         transmissionStartIndex = len; // next index is yellow
         print(">>> Transmission started at frame e $transmissionStartIndex");
-        if(greenBlinkCount == 2){
-          _toggleDetect();
-        }
+        // if(transmissionStarted){
+        //   _toggleDetect();
+        //   transmissionStarted = false;
+        //   if(greenBlinkCount == 2){
+        //     greenBlinkCount = 0;
+        //
+        //   }
+        //
+        // }
 
 
       }
     }
 
-    if (transmissionStarted && len >= transmissionStartIndex + 10) {
+    if (transmissionStarted && len >= transmissionStartIndex + 17) {
       List<int> bits = [];
       List<String> colors = [];
 
-      for (int i = transmissionStartIndex + 1; i <= transmissionStartIndex + 8; i++) {
+      for (int i = transmissionStartIndex+1 ; i <= transmissionStartIndex + 16; i++) {
         final isOn = lp[0][i] == 1;
         final color = lp[1][i];
         final bit = (isOn && color == "red") ? 1 : 0;
         bits.add(bit);
         colors.add(color);
       }
-
+      String character = decodeCharacter(bits);
       print(">>> Received 8 bits: $bits");
       print(">>> Colors: $colors");
+      print(">>> character : $character");
 
       // Reset
       transmissionStarted = false;
+      if(transmittingStart == false){
+        _toggleDetect();
+      }
       transmissionStartIndex = -1;
 
       // Send to UI / controller
       // byteController.sink.add(bits);
     }
 
-    //print("count :$counter minVal $minVal maxVal $maxVal brightness $_avgBrightness on/off ${ledtest[counter-1] } dec_no $_ledOn  led_history: $ledHistory  color : $_ledColorName");
+    print("count :$counter minVal $minVal maxVal $maxVal brightness $_avgBrightness on/off ${ledtest[counter-1] } dec_no $_ledOn  led_history: $ledHistory  color : $_ledColorName    Hue Val: : ${stats[3]}" );
 
     // final idx = stats[5].toInt();               // your “colorVal” field
     // final name = ledColorDetect(idx);
@@ -630,6 +655,24 @@ class _DetectionScreenState extends State<DetectionScreen> {
     // );
     counter = counter +1;
      _processing = false;
+  }
+
+  String decodeCharacter(List<int> frameBits){
+    String char = "";
+    if (frameBits.length != 16) return '?';
+
+    List<int> bits = [];
+
+    for (int i = 0; i < 16; i += 2) {
+      bits.add(frameBits[i]); // take every ON frame
+    }
+
+    int charCode = 0;
+    for (int bit in bits) {
+      charCode = (charCode << 1) | bit;
+    }
+
+    return String.fromCharCode(charCode);
   }
 
   List<int> encodeRedByNineDropLeading(List<String> input) {
