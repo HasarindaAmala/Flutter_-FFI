@@ -11,7 +11,7 @@ List<String> word = [];
 List<double> ledtest =[];
 List<List<double>> minMax =[];
 List<double> brightnessList =[];
- int? _lastFrame;
+int? _lastFrame;
 List<int> intervals = [];
 int counter = 1;
 
@@ -27,6 +27,7 @@ bool transmissionStarted = false;
 int transmissionStartIndex = -1;
 List<int> collectedBits = [];
 List<String> collectedColors = [];
+String character = "";
 
 /// A small data class to hold one frame’s detection results
 class DetectionResult {
@@ -132,11 +133,11 @@ class _DetectionScreenState extends State<DetectionScreen> {
   Future<void> _initCamera() async {
     final cameras = await availableCameras();
     _controller = CameraController(
-      cameras.first,
-      ResolutionPreset.low, // Changed from ultraHigh for speed
-      enableAudio: false,
-      fps: 30,
-      imageFormatGroup: ImageFormatGroup.yuv420// Throttle to 30fps—60fps is overkill if we drop frames anyway
+        cameras.first,
+        ResolutionPreset.low, // Changed from ultraHigh for speed
+        enableAudio: false,
+        fps: 30,
+        imageFormatGroup: ImageFormatGroup.yuv420// Throttle to 30fps—60fps is overkill if we drop frames anyway
     );
 
     await _controller!.initialize();
@@ -190,6 +191,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
       finalBits=  [[], []];
       greenBlinkCount = 0;
       bitStart = false;
+      character= "Incoming..";
       print("starting output : $finalBits");
       _controller!.startImageStream(_onFrame);
 
@@ -204,7 +206,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
         _detecting = false;
       });
 
-      }
+    }
 
   }
 
@@ -259,89 +261,89 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
 
 
-     if(frame<6){
+    if(frame<6){
 
-       for(int i = 0; i< 5; i++){
-         ensureSize(i);
-         ledtest[i] = history[i] ? 1.0:0.0;
-       }
+      for(int i = 0; i< 5; i++){
+        ensureSize(i);
+        ledtest[i] = history[i] ? 1.0:0.0;
+      }
 
-     }else{
-       int a = frame%5;
-       int b = (frame-1)%5;
-       int c = (frame -2)%5;
-       int d = (frame -3)%5;
-       int e = (frame -4)%5;
+    }else{
+      int a = frame%5;
+      int b = (frame-1)%5;
+      int c = (frame -2)%5;
+      int d = (frame -3)%5;
+      int e = (frame -4)%5;
 
-       ensureSize(frame-1);
-       ensureSize(frame -2);
-       ensureSize(frame -3);
-       ensureSize(frame -4);
-       ensureSize(frame -5);
-
-
-       if(a == 0){
-         ledtest[frame-1] =  history[4] ? 1.0:0.0 ;
-       }else if(a == 1){
-         ledtest[frame-1] =  history[0] ? 1.0:0.0 ;
-       }else if(a == 2){
-         ledtest[frame-1] =  history[1] ? 1.0:0.0 ;
-       } else if(a == 3){
-         ledtest[frame-1] =  history[2] ? 1.0:0.0 ;
-       }else if(a == 4){
-         ledtest[frame-1] =  history[3] ? 1.0:0.0 ;
-       }
-
-       if(b == 0){
-         ledtest[frame-2] =  history[4] ? 1.0:0.0 ;
-       }else if(b == 1){
-         ledtest[frame-2] =  history[0] ? 1.0:0.0 ;
-       }else if(b == 2){
-         ledtest[frame-2] =  history[1] ? 1.0:0.0 ;
-       } else if(b == 3){
-         ledtest[frame-2] =  history[2] ? 1.0:0.0 ;
-       }else if(b == 4){
-         ledtest[frame-2] =  history[3] ? 1.0:0.0 ;
-       }
-
-       if(c == 0){
-         ledtest[frame-3] =  history[4] ? 1.0:0.0 ;
-       }else if(c == 1){
-         ledtest[frame-3] =  history[0] ? 1.0:0.0 ;
-       }else if(c == 2){
-         ledtest[frame-3] =  history[1] ? 1.0:0.0 ;
-       } else if(c == 3){
-         ledtest[frame-3] =  history[2] ? 1.0:0.0 ;
-       }else if(c == 4){
-         ledtest[frame-3] =  history[3] ? 1.0:0.0 ;
-       }
-
-       if(d == 0){
-         ledtest[frame-4] =  history[4] ? 1.0:0.0 ;
-       }else if(d == 1){
-         ledtest[frame-4] =  history[0] ? 1.0:0.0 ;
-       }else if(d == 2){
-         ledtest[frame-4] =  history[1] ? 1.0:0.0 ;
-       } else if(d == 3){
-         ledtest[frame-4] =  history[2] ? 1.0:0.0 ;
-       }else if(d == 4){
-         ledtest[frame-4] =  history[3] ? 1.0:0.0 ;
-       }
-
-       if(e == 0){
-         ledtest[frame-5] =  history[4] ? 1.0:0.0 ;
-       }else if(e == 1){
-         ledtest[frame-5] =  history[0] ? 1.0:0.0 ;
-       }else if(e == 2){
-         ledtest[frame-5] =  history[1] ? 1.0:0.0 ;
-       } else if(e == 3){
-         ledtest[frame-5] =  history[2] ? 1.0:0.0 ;
-       }else if(e == 4){
-         ledtest[frame-5] =  history[3] ? 1.0:0.0 ;
-       }
+      ensureSize(frame-1);
+      ensureSize(frame -2);
+      ensureSize(frame -3);
+      ensureSize(frame -4);
+      ensureSize(frame -5);
 
 
-     }
+      if(a == 0){
+        ledtest[frame-1] =  history[4] ? 1.0:0.0 ;
+      }else if(a == 1){
+        ledtest[frame-1] =  history[0] ? 1.0:0.0 ;
+      }else if(a == 2){
+        ledtest[frame-1] =  history[1] ? 1.0:0.0 ;
+      } else if(a == 3){
+        ledtest[frame-1] =  history[2] ? 1.0:0.0 ;
+      }else if(a == 4){
+        ledtest[frame-1] =  history[3] ? 1.0:0.0 ;
+      }
+
+      if(b == 0){
+        ledtest[frame-2] =  history[4] ? 1.0:0.0 ;
+      }else if(b == 1){
+        ledtest[frame-2] =  history[0] ? 1.0:0.0 ;
+      }else if(b == 2){
+        ledtest[frame-2] =  history[1] ? 1.0:0.0 ;
+      } else if(b == 3){
+        ledtest[frame-2] =  history[2] ? 1.0:0.0 ;
+      }else if(b == 4){
+        ledtest[frame-2] =  history[3] ? 1.0:0.0 ;
+      }
+
+      if(c == 0){
+        ledtest[frame-3] =  history[4] ? 1.0:0.0 ;
+      }else if(c == 1){
+        ledtest[frame-3] =  history[0] ? 1.0:0.0 ;
+      }else if(c == 2){
+        ledtest[frame-3] =  history[1] ? 1.0:0.0 ;
+      } else if(c == 3){
+        ledtest[frame-3] =  history[2] ? 1.0:0.0 ;
+      }else if(c == 4){
+        ledtest[frame-3] =  history[3] ? 1.0:0.0 ;
+      }
+
+      if(d == 0){
+        ledtest[frame-4] =  history[4] ? 1.0:0.0 ;
+      }else if(d == 1){
+        ledtest[frame-4] =  history[0] ? 1.0:0.0 ;
+      }else if(d == 2){
+        ledtest[frame-4] =  history[1] ? 1.0:0.0 ;
+      } else if(d == 3){
+        ledtest[frame-4] =  history[2] ? 1.0:0.0 ;
+      }else if(d == 4){
+        ledtest[frame-4] =  history[3] ? 1.0:0.0 ;
+      }
+
+      if(e == 0){
+        ledtest[frame-5] =  history[4] ? 1.0:0.0 ;
+      }else if(e == 1){
+        ledtest[frame-5] =  history[0] ? 1.0:0.0 ;
+      }else if(e == 2){
+        ledtest[frame-5] =  history[1] ? 1.0:0.0 ;
+      } else if(e == 3){
+        ledtest[frame-5] =  history[2] ? 1.0:0.0 ;
+      }else if(e == 4){
+        ledtest[frame-5] =  history[3] ? 1.0:0.0 ;
+      }
+
+
+    }
 
 
   }
@@ -394,7 +396,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
 
     _fpsFrameCount++;
     if(_processing == true){
-     print("dropped");
+      print("dropped");
     }
     if (_processing) return;
     _processing = true;
@@ -547,7 +549,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
         bits.add(bit);
         colors.add(color);
       }
-      String character = decodeCharacter(bits);
+       character = decodeCharacter(bits);
       print(">>> Received 8 bits: $bits");
       print(">>> Colors: $colors");
       print(">>> character : $character");
@@ -654,7 +656,7 @@ class _DetectionScreenState extends State<DetectionScreen> {
     //   ),
     // );
     counter = counter +1;
-     _processing = false;
+    _processing = false;
   }
 
   String decodeCharacter(List<int> frameBits){
@@ -985,6 +987,7 @@ class ControlPanel extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: SingleChildScrollView(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 5),
@@ -1008,40 +1011,8 @@ class ControlPanel extends StatelessWidget {
               child: Text(isDetecting ? "Stop" : "Detect"),
             ),
             const SizedBox(height: 8),
-            SizedBox(
-              height: 150,
-              child: SingleChildScrollView(
-                child: Text(
-                  formatList(ledtest),
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text("length: ${ledtest.length}"),
-            const SizedBox(height: 10,),
-            SizedBox(
-              height: 150,
-              child: SingleChildScrollView(
-                child: Text(
-                  formatBrightnessList(brightnessList),
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
-              ),
-            ),
-            Text("brightness: ${brightnessList.length}"),
-            const SizedBox(height: 10,),
-            SizedBox(
-              height: 150,
-              child: SingleChildScrollView(
-                child: Text(
-                  formatminMaxList(minMax),
-                  style: const TextStyle(fontFamily: 'monospace', fontSize: 12),
-                ),
-              ),
-            ),
-            Text("minMax: ${minMax.length}"),
-             const SizedBox(height: 10,),
+            Text("Character : $character "),
+
             // SizedBox(
             //   height: 150,
             //   child: SingleChildScrollView(
@@ -1154,6 +1125,3 @@ class DetectionInfo extends StatelessWidget {
     );
   }
 }
-
-
-
